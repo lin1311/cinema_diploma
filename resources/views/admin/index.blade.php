@@ -273,5 +273,4 @@
   <script src="{{ asset('assets/admin/js/popup-film-editor.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-film-remove.js') }}"></script>
   <script src="{{ asset('assets/admin/js/hall-seats-setup.js') }}"></script>
-  <script src="{{ asset('assets/admin/js/set-prices.js') }}"></script>
 @endpush

@@ -56,6 +56,37 @@ document.addEventListener('DOMContentLoaded', function() {
     window.hallSchemeFromServer = window.hallSchemeFromServer || {};
     window.pricesFromServer = window.pricesFromServer || {};
 
+    const PRICE_STORAGE_KEY = 'cinema_prices_drafts';
+
+    function readPriceDrafts() {
+        try {
+            return JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function writePriceDrafts(data) {
+        localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(data));
+    }
+
+    function getDraftForHall(hallId) {
+        const drafts = readPriceDrafts();
+        return drafts[hallId];
+    }
+
+    function setDraftForHall(hallId, draft) {
+        const drafts = readPriceDrafts();
+        drafts[hallId] = draft;
+        writePriceDrafts(drafts);
+    }
+
+    function clearDraftForHall(hallId) {
+        const drafts = readPriceDrafts();
+        delete drafts[hallId];
+        writePriceDrafts(drafts);
+    }
+
     // ======== Хелперы по состоянию «есть/нет залов» ========
     function hasAnyHalls() {
         return !!document.querySelector('.conf-step__list li[data-hall-id]');
@@ -124,24 +155,30 @@ document.addEventListener('DOMContentLoaded', function() {
         block.style.display = '';
         form.style.display = '';
         form.dataset.hallId = hallId;
-        form.action = '/admin/prices/' + hallId; // при необходимости замени на свой URL
+        form.action = '/admin/prices/' + hallId;
 
-        const prices = (window.pricesFromServer && window.pricesFromServer[hallId])
+        const draftPrices = getDraftForHall(hallId);
+        const normalizedDraft = (draftPrices && typeof draftPrices === 'object') ? draftPrices : null;
+
+        const serverPrices = (window.pricesFromServer && window.pricesFromServer[hallId])
             ? window.pricesFromServer[hallId]
             : {};
+
+        const prices = normalizedDraft || serverPrices || {};
 
         const inputStd = form.querySelector('input[name="prices[standart]"]');
         const inputVip = form.querySelector('input[name="prices[vip]"]');
 
         if (inputStd) {
             inputStd.value = prices.standart != null ? prices.standart : '';
-            inputStd.dataset.base = prices.standart != null ? prices.standart : '';
+            inputStd.dataset.base = serverPrices.standart != null ? serverPrices.standart : '';
         }
         if (inputVip) {
             inputVip.value = prices.vip != null ? prices.vip : '';
-            inputVip.dataset.base = prices.vip != null ? prices.vip : '';
+            inputVip.dataset.base = serverPrices.vip != null ? serverPrices.vip : '';
         }
     }
+
 
     function hidePricesFormBlockIfNoHalls() {
         const block = document.querySelector('.prices-form-block');
@@ -568,6 +605,36 @@ document.addEventListener('DOMContentLoaded', function() {
             showPricesFormBlockForHall(initPricesRadio.value);
         } else {
             hidePricesFormBlockIfNoHalls();
+        }
+
+        const pricesForm = document.querySelector('.prices-form-block form.hall-form');
+        if (pricesForm) {
+            const inputStd = pricesForm.querySelector('input[name="prices[standart]"]');
+            const inputVip = pricesForm.querySelector('input[name="prices[vip]"]');
+            const saveDraft = () => {
+                const hallId = pricesForm.dataset.hallId;
+                if (!hallId) return;
+                setDraftForHall(hallId, {
+                    standart: inputStd ? inputStd.value : '',
+                    vip: inputVip ? inputVip.value : ''
+                });
+            };
+
+            if (inputStd) inputStd.addEventListener('input', saveDraft);
+            if (inputVip) inputVip.addEventListener('input', saveDraft);
+
+            pricesForm.addEventListener('reset', function() {
+                const hallId = pricesForm.dataset.hallId;
+                if (!hallId) return;
+                clearDraftForHall(hallId);
+                const serverPrices = (window.pricesFromServer && window.pricesFromServer[hallId])
+                    ? window.pricesFromServer[hallId]
+                    : {};
+                setTimeout(() => {
+                    if (inputStd) inputStd.value = serverPrices.standart != null ? serverPrices.standart : '';
+                    if (inputVip) inputVip.value = serverPrices.vip != null ? serverPrices.vip : '';
+                }, 0);
+            });
         }
 
         document.addEventListener('click', function (e) {
