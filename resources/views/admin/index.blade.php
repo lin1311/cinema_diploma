@@ -89,7 +89,7 @@
           </div>
 
           <fieldset class="conf-step__buttons text-center">
-            <button id="cancel-scheme-btn" class="conf-step__button conf-step__button-regular">Отмена</button>
+            <button id="cancel-scheme-btn" type="button" class="conf-step__button conf-step__button-regular">Отмена</button>
             <button id="save-scheme-btn" type="button" class="conf-step__button conf-step__button-accent">Сохранить</button>
           </fieldset>
         </div>       

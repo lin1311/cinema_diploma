@@ -3,12 +3,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const rowsInput = document.getElementById('hall-rows-input');
     const seatsInput = document.getElementById('hall-seats-input');
     const wrapper = document.getElementById('hall-scheme-wrapper');
-    const hallsRadios = document.querySelectorAll('input[name="chairs-hall"]');
     const saveBtn = document.getElementById('save-scheme-btn');
     const cancelBtn = document.getElementById('cancel-scheme-btn');
 
-    if (!rowsInput || !seatsInput || !wrapper || !hallsRadios.length) {
+    if (!rowsInput || !seatsInput || !wrapper) {
         return;
+    }
+
+    function getHallsRadios() {
+        return document.querySelectorAll('input[name="chairs-hall"]');
     }
 
     // Инициализация схем
@@ -63,10 +66,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    let currentHallId = (document.querySelector('input[name="chairs-hall"]:checked') || hallsRadios[0]).value;
+    const initialChecked = document.querySelector('input[name="chairs-hall"]:checked');
+    let currentHallId = initialChecked ? initialChecked.value : null;
 
     // Убедимся что для всех залов есть схемы
-    hallsRadios.forEach(radio => {
+    getHallsRadios().forEach(radio => {
         const hallId = radio.value;
         if (!schemes[hallId]) {
             schemes[hallId] = { rows: 0, seats: 0, seatsGrid: [] };
@@ -230,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     alert('Сохранено!');
-                    serverSchemes[currentHallId] = schemeToSave;
+                     serverSchemes[currentHallId] = schemeToSave;
                 } else {
                     alert('Ошибка сохранения');
                 }
@@ -242,27 +246,39 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+     function resetToServerScheme() {
+        const schemeFromServer = normalizeScheme(serverSchemes[currentHallId]);
+
+        if (schemeFromServer.rows > 0 && schemeFromServer.seats > 0) {
+            schemes[currentHallId] = schemeFromServer;
+            restoreForHall(currentHallId);
+            return;
+        }
+
+        schemes[currentHallId] = { rows: 0, seats: 0, seatsGrid: [] };
+        rowsInput.value = '';
+        seatsInput.value = '';
+        wrapper.innerHTML = '';
+    }
+
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function (e) {
             e.preventDefault();
-
-            const schemeFromServer = normalizeScheme(serverSchemes[currentHallId]);
-
-            if (schemeFromServer.rows > 0 && schemeFromServer.seats > 0) {
-                schemes[currentHallId] = schemeFromServer;
-                restoreForHall(currentHallId);
-                return;
-            }
-
-            schemes[currentHallId] = { rows: 0, seats: 0, seatsGrid: [] };
-            rowsInput.value = '';
-            seatsInput.value = '';
-            wrapper.innerHTML = '';
+            resetToServerScheme();
         });
     }
+
+    document.addEventListener('click', function (event) {
+        if (event.target.closest('#cancel-scheme-btn')) {
+            event.preventDefault();
+            resetToServerScheme();
+        }
+    });
     
     // Инициализация
-    restoreForHall(currentHallId);
+    if (currentHallId) {
+        restoreForHall(currentHallId);
+    }
 
     // Экспорт для popup-hall.js
     window.hallSchemesLocal = schemes;

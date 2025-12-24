@@ -269,7 +269,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const allRadios = chairsBox.querySelectorAll('input[name="chairs-hall"]');
             if (allRadios.length === 1) {
                 allRadios[0].checked = true;
-                onSchemeHallChanged(hallId);
+                allRadios[0].dispatchEvent(new Event('change', { bubbles: true }));
             }
         }
 
@@ -322,6 +322,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ======== Удалить зал из всех блоков ========
         function removeHallFromUI(hallId) {
+            if (window.hallSchemesLocal && window.hallSchemesLocal[hallId]) {
+                delete window.hallSchemesLocal[hallId];
+            }
+            if (window.hallSchemeFromServer && window.hallSchemeFromServer[hallId]) {
+                delete window.hallSchemeFromServer[hallId];
+            }
+            if (window.pricesFromServer && window.pricesFromServer[hallId]) {
+                delete window.pricesFromServer[hallId];
+            }
+
             // 1) Верхний список
             let mainLi = document.querySelector(`.conf-step__list li[data-hall-id="${hallId}"]`);
             if (!mainLi) {
@@ -345,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const firstRadio = chairsBox.querySelector('input[name="chairs-hall"]');
                     if (firstRadio) {
                         firstRadio.checked = true;
-                        onSchemeHallChanged(firstRadio.value);
+                        firstRadio.dispatchEvent(new Event('change', { bubbles: true }));
                     } else {
                         const wrapper = document.getElementById('hall-scheme-wrapper');
                         if (wrapper) wrapper.innerHTML = '';
