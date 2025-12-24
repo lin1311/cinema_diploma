@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const wrapper = document.getElementById('hall-scheme-wrapper');
     const hallsRadios = document.querySelectorAll('input[name="chairs-hall"]');
     const saveBtn = document.getElementById('save-scheme-btn');
+    const cancelBtn = document.getElementById('cancel-scheme-btn');
 
     if (!rowsInput || !seatsInput || !wrapper || !hallsRadios.length) {
         return;
@@ -15,6 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Загружаем схемы с сервера
     const serverSchemes = window.hallSchemeFromServer || {};
+    window.hallSchemeFromServer = serverSchemes;
     console.log('Server schemes:', serverSchemes);
 
     function normalizeScheme(rawScheme) {
@@ -228,10 +230,7 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     alert('Сохранено!');
-                    if (!window.hallSchemeFromServer) {
-                        window.hallSchemeFromServer = {};
-                    }
-                    window.hallSchemeFromServer[currentHallId] = schemeToSave;
+                    serverSchemes[currentHallId] = schemeToSave;
                 } else {
                     alert('Ошибка сохранения');
                 }
@@ -243,6 +242,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            const schemeFromServer = normalizeScheme(serverSchemes[currentHallId]);
+
+            if (schemeFromServer.rows > 0 && schemeFromServer.seats > 0) {
+                schemes[currentHallId] = schemeFromServer;
+                restoreForHall(currentHallId);
+                return;
+            }
+
+            schemes[currentHallId] = { rows: 0, seats: 0, seatsGrid: [] };
+            rowsInput.value = '';
+            seatsInput.value = '';
+            wrapper.innerHTML = '';
+        });
+    }
     
     // Инициализация
     restoreForHall(currentHallId);
