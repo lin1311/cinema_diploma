@@ -611,6 +611,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (pricesForm) {
             const inputStd = pricesForm.querySelector('input[name="prices[standart]"]');
             const inputVip = pricesForm.querySelector('input[name="prices[vip]"]');
+            const tokenInput = pricesForm.querySelector('input[name="_token"]');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')|| (tokenInput ? tokenInput.value : '');
             const saveDraft = () => {
                 const hallId = pricesForm.dataset.hallId;
                 if (!hallId) return;
@@ -636,6 +638,44 @@ document.addEventListener('DOMContentLoaded', function() {
                 }, 0);
             });
         }
+
+       pricesForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const hallId = pricesForm.dataset.hallId;
+                if (!hallId) return;
+                const formData = new FormData(pricesForm);
+                fetch(pricesForm.action, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+                    },
+                    body: formData
+                })
+                    .then(async resp => {
+                        if (!resp.ok) {
+                            throw new Error('save_failed');
+                        }
+                        return resp.json();
+                    })
+                    .then(data => {
+                        if (!data || !data.success) {
+                            throw new Error('save_failed');
+                        }
+                        if (!window.pricesFromServer) window.pricesFromServer = {};
+                        window.pricesFromServer[hallId] = data.prices || {
+                            standart: inputStd ? inputStd.value : '',
+                            vip: inputVip ? inputVip.value : ''
+                        };
+                        clearDraftForHall(hallId);
+                        if (inputStd) inputStd.dataset.base = window.pricesFromServer[hallId].standart ?? '';
+                        if (inputVip) inputVip.dataset.base = window.pricesFromServer[hallId].vip ?? '';
+                    })
+                    .catch(() => {
+                        alert('Не удалось сохранить цены.');
+                    });
+        });
 
         document.addEventListener('click', function (e) {
             const header = e.target.closest('.conf-step__header');
