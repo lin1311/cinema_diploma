@@ -1,50 +1,75 @@
 document.addEventListener('DOMContentLoaded', function () {
     const radios = document.querySelectorAll('input[name="prices-hall"]');
-    // Первый input — стандарт, второй — VIP, ориентируемся на шаблон с name!
     const standartInput = document.querySelector('input[name="prices[standart]"]');
     const vipInput = document.querySelector('input[name="prices[vip]"]');
     const priceForm = document.querySelector('.hall-form');
     const pricesFromServer = window.pricesFromServer || {};
 
-    // Черновики между переключениями
+    if (!radios.length || !standartInput || !vipInput || !priceForm) {
+        return;
+    }
     let localPrices = {};
 
     // Стартовый зал
     let currentHallId = (document.querySelector('input[name="prices-hall"]:checked') || radios[0]).value;
 
-    function updateForm(hallId) {
-        let prices = localPrices[hallId] || pricesFromServer[hallId] || {};
-        standartInput.value = prices.standart !== undefined && prices.standart !== null ? prices.standart : '';
-        vipInput.value = prices.vip !== undefined && prices.vip !== null ? prices.vip : '';
-        priceForm.action = priceForm.action.replace(/prices\/\d+/, 'prices/' + hallId);
+    if (!priceForm.dataset.baseAction) {
+        priceForm.dataset.baseAction = priceForm.action;
     }
 
-    function trackInput() {
+    function normalizePrices(rawPrices) {
+        if (rawPrices && typeof rawPrices === 'object') {
+            return {
+                standart: rawPrices.standart ?? '',
+                vip: rawPrices.vip ?? ''
+            };
+        }
+        return { standart: '', vip: '' };
+    }
+
+    function applyPrices(prices) {
+        const standartValue = prices.standart ?? '';
+        const vipValue = prices.vip ?? '';
+        standartInput.value = standartValue;
+        vipInput.value = vipValue;
+        standartInput.dataset.base = standartValue;
+        vipInput.dataset.base = vipValue;
+    }
+
+    function restoreForHall(hallId) {
+        const prices = localPrices[hallId] || normalizePrices(pricesFromServer[hallId]);
+        localPrices[hallId] = prices;
+        applyPrices(prices);
+        priceForm.action = priceForm.dataset.baseAction.replace(/prices\/\d+/, 'prices/' + hallId);
+    }
+
+    function updatePricesFromInputs() {
         localPrices[currentHallId] = {
             standart: standartInput.value,
             vip: vipInput.value
         };
     }
 
-    // Черновик при ручном вводе
-    standartInput.addEventListener('input', trackInput);
-    vipInput.addEventListener('input', trackInput);
+    standartInput.addEventListener('input', updatePricesFromInputs);
+    vipInput.addEventListener('input', updatePricesFromInputs);
+
+    function switchHall(hallId) {
+        updatePricesFromInputs();
+        currentHallId = hallId;
+        restoreForHall(currentHallId);
+    }
 
     radios.forEach(radio => {
         radio.addEventListener('change', function () {
-            trackInput();
-            currentHallId = radio.value;
-            updateForm(currentHallId);
+            switchHall(radio.value);
         });
     });
 
-    // Первая подстановка
-    updateForm(currentHallId);
+    restoreForHall(currentHallId);
 
-    // AJAX submit
     priceForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        trackInput();
+        updatePricesFromInputs();
         let fd = new FormData(priceForm);
         fetch(priceForm.action, {
             method: 'POST',
@@ -61,18 +86,18 @@ document.addEventListener('DOMContentLoaded', function () {
                     standart: standartInput.value,
                     vip: vipInput.value
                 };
-                delete localPrices[currentHallId];
+                localPrices[currentHallId] = normalizePrices(pricesFromServer[currentHallId]);
+                restoreForHall(currentHallId);
             }
           })
           .catch(() => alert('Ошибка сети/сервера!'));
     });
 
-    // Кнопка "Отмена" должна сбрасывать значение на последнее сохранённое
     const resetBtn = priceForm.querySelector('button[type="reset"], input[type="reset"]');
     if (resetBtn) {
         resetBtn.addEventListener('click', function () {
-            delete localPrices[currentHallId];
-            updateForm(currentHallId);
+            localPrices[currentHallId] = normalizePrices(pricesFromServer[currentHallId]);
+            restoreForHall(currentHallId);
         });
     }
 });
