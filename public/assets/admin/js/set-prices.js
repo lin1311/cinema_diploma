@@ -1,103 +1,62 @@
-document.addEventListener('DOMContentLoaded', function () {
-    const radios = document.querySelectorAll('input[name="prices-hall"]');
+document.addEventListener('DOMContentLoaded', () => {
     const standartInput = document.querySelector('input[name="prices[standart]"]');
     const vipInput = document.querySelector('input[name="prices[vip]"]');
-    const priceForm = document.querySelector('.hall-form');
-    const pricesFromServer = window.pricesFromServer || {};
+    const form = document.querySelector('.hall-form');
+    const hallButtons = document.querySelectorAll('.hall-btn');
 
-    if (!radios.length || !standartInput || !vipInput || !priceForm) {
-        return;
-    }
-    let localPrices = {};
+    if (!standartInput || !vipInput || !form || !hallButtons.length) return;
 
-    // Стартовый зал
-    let currentHallId = (document.querySelector('input[name="prices-hall"]:checked') || radios[0]).value;
+    const STORAGE_KEY = 'cinema_prices_drafts';
+    let currentHallId = null;
 
-    if (!priceForm.dataset.baseAction) {
-        priceForm.dataset.baseAction = priceForm.action;
-    }
+    const read = () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const write = (data) => localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 
-    function normalizePrices(rawPrices) {
-        if (rawPrices && typeof rawPrices === 'object') {
-            return {
-                standart: rawPrices.standart ?? '',
-                vip: rawPrices.vip ?? ''
-            };
-        }
-        return { standart: '', vip: '' };
-    }
+    const loadPrices = (hallId) => {
+        const data = read()[hallId] || {};
+        standartInput.value = data.standart ?? '';
+        vipInput.value = data.vip ?? '';
+    };
 
-    function applyPrices(prices) {
-        const standartValue = prices.standart ?? '';
-        const vipValue = prices.vip ?? '';
-        standartInput.value = standartValue;
-        vipInput.value = vipValue;
-        standartInput.dataset.base = standartValue;
-        vipInput.dataset.base = vipValue;
-    }
-
-    function restoreForHall(hallId) {
-        const prices = localPrices[hallId] || normalizePrices(pricesFromServer[hallId]);
-        localPrices[hallId] = prices;
-        applyPrices(prices);
-        priceForm.action = priceForm.dataset.baseAction.replace(/prices\/\d+/, 'prices/' + hallId);
-    }
-
-    function updatePricesFromInputs() {
-        localPrices[currentHallId] = {
+    const savePrices = () => {
+        if (!currentHallId) return;
+        const data = read();
+        data[currentHallId] = {
             standart: standartInput.value,
             vip: vipInput.value
         };
-    }
+        write(data);
+    };
 
-    standartInput.addEventListener('input', updatePricesFromInputs);
-    vipInput.addEventListener('input', updatePricesFromInputs);
+    // сохраняем при вводе
+    standartInput.addEventListener('input', savePrices);
+    vipInput.addEventListener('input', savePrices);
 
-    function switchHall(hallId) {
-        updatePricesFromInputs();
-        currentHallId = hallId;
-        restoreForHall(currentHallId);
-    }
-
-    radios.forEach(radio => {
-        radio.addEventListener('change', function () {
-            switchHall(radio.value);
+    //  переключение залов
+    hallButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            savePrices();
+            currentHallId = btn.dataset.hallId;
+            loadPrices(currentHallId);
         });
     });
 
-    restoreForHall(currentHallId);
+    //  первый активный зал
+    const firstHall = hallButtons[0];
+    currentHallId = firstHall.dataset.hallId;
+    loadPrices(currentHallId);
 
-    priceForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        updatePricesFromInputs();
-        let fd = new FormData(priceForm);
-        fetch(priceForm.action, {
-            method: 'POST',
-            body: fd,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        }).then(res => res.json())
-          .then(data => {
-            alert(data.success ? 'Цены успешно сохранены!' : 'Ошибка сохранения');
-            if (data.success) {
-                pricesFromServer[currentHallId] = {
-                    standart: standartInput.value,
-                    vip: vipInput.value
-                };
-                localPrices[currentHallId] = normalizePrices(pricesFromServer[currentHallId]);
-                restoreForHall(currentHallId);
-            }
-          })
-          .catch(() => alert('Ошибка сети/сервера!'));
-    });
-
-    const resetBtn = priceForm.querySelector('button[type="reset"], input[type="reset"]');
+    const resetBtn = form.querySelector('[type="reset"]');
     if (resetBtn) {
-        resetBtn.addEventListener('click', function () {
-            localPrices[currentHallId] = normalizePrices(pricesFromServer[currentHallId]);
-            restoreForHall(currentHallId);
+        resetBtn.addEventListener('click', () => {
+            if (!currentHallId) return;
+            const data = read();
+            delete data[currentHallId];
+            write(data);
+            standartInput.value = '';
+            vipInput.value = '';
         });
     }
 });
+
+
