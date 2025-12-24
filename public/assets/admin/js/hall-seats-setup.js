@@ -1,5 +1,3 @@
-
-hall-seats-setup-fixed.js
 document.addEventListener('DOMContentLoaded', function () {
 
     const rowsInput = document.getElementById('hall-rows-input');
@@ -13,11 +11,40 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Инициализация схем
-    let schemes = {};
+    let schemes = window.hallSchemesLocal || {};
 
     // Загружаем схемы с сервера
     const serverSchemes = window.hallSchemeFromServer || {};
     console.log('Server schemes:', serverSchemes);
+
+    function normalizeScheme(rawScheme) {
+        if (Array.isArray(rawScheme)) {
+            const rows = rawScheme.length;
+            const seats = rows > 0 ? rawScheme[0].length : 0;
+            return { rows, seats, seatsGrid: rawScheme };
+        }
+
+        if (rawScheme && typeof rawScheme === 'object') {
+            let rows = parseInt(rawScheme.rows, 10) || 0;
+            let seats = parseInt(rawScheme.seats, 10) || 0;
+            let seatsGrid = Array.isArray(rawScheme.seatsGrid) ? rawScheme.seatsGrid : [];
+
+            if (seatsGrid.length && (!rows || !seats)) {
+                rows = seatsGrid.length;
+                seats = seatsGrid[0]?.length || 0;
+            }
+
+            if (!seatsGrid.length && rows > 0 && seats > 0) {
+                seatsGrid = Array.from({ length: rows }, () =>
+                    Array.from({ length: seats }, () => 'standart')
+                );
+            }
+
+            return { rows, seats, seatsGrid };
+        }
+
+        return { rows: 0, seats: 0, seatsGrid: [] };
+    }
 
     // Нормализуем данные с более строгой проверкой
     Object.keys(serverSchemes).forEach(hallId => {
@@ -25,24 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
         console.log(`Processing hall ${hallId}:`, scheme, 'Type:', typeof scheme, 'Is array:', Array.isArray(scheme));
 
-        // Проверяем что это объект (не массив) и содержит нужные поля
-        if (scheme && 
-            typeof scheme === 'object' && 
-            !Array.isArray(scheme) && 
-            scheme.rows && 
-            scheme.seats && 
-            Array.isArray(scheme.seatsGrid) && 
-            scheme.seatsGrid.length > 0) {
-
-            schemes[hallId] = {
-                rows: parseInt(scheme.rows, 10),
-                seats: parseInt(scheme.seats, 10),
-                seatsGrid: scheme.seatsGrid
-            };
-            console.log(`✓ Loaded valid scheme for hall ${hallId}`);
+        const normalizedScheme = normalizeScheme(scheme);
+        schemes[hallId] = normalizedScheme;
+        if (normalizedScheme.rows > 0 && normalizedScheme.seats > 0) {
+            console.log(`Loaded valid scheme for hall ${hallId}`);
         } else {
-            schemes[hallId] = { rows: 0, seats: 0, seatsGrid: [] };
-            console.log(`✗ Empty scheme for hall ${hallId}`);
+            console.log(`Empty scheme for hall ${hallId}`);
         }
     });
 
@@ -134,6 +149,23 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    window.renderHallScheme = function (schemeData, hallId = currentHallId) {
+        const normalized = normalizeScheme(schemeData);
+        schemes[hallId] = normalized;
+
+        if (hallId === currentHallId) {
+            if (normalized.rows > 0 && normalized.seats > 0) {
+                rowsInput.value = normalized.rows;
+                seatsInput.value = normalized.seats;
+                renderScheme(normalized.seatsGrid);
+            } else {
+                rowsInput.value = '';
+                seatsInput.value = '';
+                wrapper.innerHTML = '';
+            }
+        }
+    };
+
     // События для инпутов
     rowsInput.addEventListener('input', function () {
         renderScheme(schemes[currentHallId]?.seatsGrid || []);
@@ -145,26 +177,29 @@ document.addEventListener('DOMContentLoaded', function () {
         updateSchemeFromDOM();
     });
 
-    // Переключение между залами
-    hallsRadios.forEach(function (radio) {
-        radio.addEventListener('change', function () {
-            console.log(`Switching from hall ${currentHallId} to ${radio.value}`);
+    function switchHall(hallId) {
+        console.log(`Switching from hall ${currentHallId} to ${hallId}`);
 
-            // Сохраняем текущую схему
-            if (currentHallId) {
-                updateSchemeFromDOM();
-            }
+        // Сохраняем текущую схему
+        if (currentHallId) {
+            updateSchemeFromDOM();
+        }    
 
-            currentHallId = radio.value;
+        currentHallId = hallId;
 
-            // Убедимся что схема существует
-            if (!schemes[currentHallId]) {
-                schemes[currentHallId] = { rows: 0, seats: 0, seatsGrid: [] };
-            }
+        // Убедимся что схема существует
+        if (!schemes[currentHallId]) {
+            schemes[currentHallId] = { rows: 0, seats: 0, seatsGrid: [] };
+        }
 
-            restoreForHall(currentHallId);
-        });
-    });
+        restoreForHall(currentHallId);
+    }
+
+    document.addEventListener('change', function (event) {
+        if (event.target.matches('input[name="chairs-hall"]')) {
+            switchHall(event.target.value);
+        }
+    })
 
     // Сохранение
     if (saveBtn) {
@@ -193,6 +228,10 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(data => {
                 if (data.success) {
                     alert('Сохранено!');
+                    if (!window.hallSchemeFromServer) {
+                        window.hallSchemeFromServer = {};
+                    }
+                    window.hallSchemeFromServer[currentHallId] = schemeToSave;
                 } else {
                     alert('Ошибка сохранения');
                 }
@@ -204,10 +243,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    
     // Инициализация
     restoreForHall(currentHallId);
 
     // Экспорт для popup-hall.js
     window.hallSchemesLocal = schemes;
-
-});
+})

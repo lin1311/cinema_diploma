@@ -182,12 +182,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const wrapper = document.getElementById('hall-scheme-wrapper');
         if (!wrapper) return;
 
-        const schemeData = (window.hallSchemeFromServer && window.hallSchemeFromServer[hallId])
-            ? window.hallSchemeFromServer[hallId]
-            : null;
+        const schemeData = (window.hallSchemesLocal && window.hallSchemesLocal[hallId])
+            ? window.hallSchemesLocal[hallId]
+            : (window.hallSchemeFromServer && window.hallSchemeFromServer[hallId])
+                ? window.hallSchemeFromServer[hallId]
+                : null;
 
         if (schemeData && typeof window.renderHallScheme === 'function') {
-            window.renderHallScheme(schemeData);
+            window.renderHallScheme(schemeData, hallId);
+        } else if (typeof window.renderHallScheme === 'function') {
+            window.renderHallScheme(null, hallId);
         } else {
             wrapper.innerHTML = '';
         }
@@ -206,10 +210,6 @@ document.addEventListener('DOMContentLoaded', function() {
             window.hallSchemesLocal[hallId] = { rows: 0, seats: 0, seatsGrid: [] };
         }
 
-        // После успешного добавления зала
-        if (window.hallSchemesLocal) {
-            window.hallSchemesLocal[newHallId] = { rows: 0, seats: 0, seatsGrid: [] };
-        }
 
 
         // инициализация пустых данных для нового зала
