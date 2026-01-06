@@ -432,7 +432,7 @@ input[type='radio'], input[type='submit'], button, .conf-step__header, select {
   position: relative;
   outline: 1px solid #848484;
   padding: 10px 0;
-  height: 40px;
+  height: 60px;
   box-sizing: border-box;
   width: 100%; }
 

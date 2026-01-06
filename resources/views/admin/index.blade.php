@@ -261,6 +261,8 @@
   @include('admin.popup_add-film')
   @include('admin.popup_edit-film')
   @include('admin.popup_delete-film')
+  @include('admin.popup_add-seanse')
+  @include('admin.popup_edit-seanse')
 @endsection
 
 @push('scripts')
@@ -271,5 +273,6 @@
   <script src="{{ asset('assets/admin/js/popup-film.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-film-editor.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-film-remove.js') }}"></script>
+  <script src="{{ asset('assets/admin/js/popup-seance.js') }}"></script>
   <script src="{{ asset('assets/admin/js/hall-seats-setup.js') }}"></script>
 @endpush
