@@ -1,4 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const updateMoviesEmptyState = () => {
+        const moviesList = document.querySelector('.conf-step__movies');
+        const emptyMessage = document.getElementById('movies-empty-message');
+        if (!moviesList || !emptyMessage) {
+            return;
+        }
+        const hasMovies = moviesList.querySelectorAll('.conf-step__movie').length > 0;
+        emptyMessage.style.display = hasMovies ? 'none' : '';
+    };
+
+    window.updateMoviesEmptyState = updateMoviesEmptyState;
     // ===== Открытие попапа =====
     const openBtn = document.getElementById('create-movie-btn');
     const popup = document.getElementById('add-movie-popup');

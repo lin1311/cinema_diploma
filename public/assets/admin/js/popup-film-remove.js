@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (card) card.remove();
                 deletePopup.classList.remove('active');
                 deletePopup.style.display = 'none';
+                if (window.updateMoviesEmptyState) {
+                    window.updateMoviesEmptyState();
+                }
             } else {
                 alert('Ошибка удаления');
             }

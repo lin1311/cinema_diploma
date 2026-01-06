@@ -215,6 +215,7 @@
           <button id="create-movie-btn" class="conf-step__button conf-step__button-accent">Добавить фильм</button>
         </p>
         <div class="conf-step__movies">
+          <p id="movies-empty-message" @if ($movies->count()) style="display:none;" @endif>Нет доступных фильмов.</p>
           @if ($movies->count())
             @foreach ($movies as $movie)
               <div class="conf-step__movie" data-id="{{ $movie->id }}">
@@ -223,8 +224,6 @@
                 <p class="conf-step__movie-duration">{{ $movie->duration }} минут</p>
               </div>
             @endforeach
-          @else
-            <p>Нет доступных фильмов.</p>
           @endif        
         </div>
         
