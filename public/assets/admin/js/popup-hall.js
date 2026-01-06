@@ -56,18 +56,14 @@ document.addEventListener('DOMContentLoaded', function() {
     window.hallSchemeFromServer = window.hallSchemeFromServer || {};
     window.pricesFromServer = window.pricesFromServer || {};
 
-    const PRICE_STORAGE_KEY = 'cinema_prices_drafts';
+    let priceDrafts = {};
 
     function readPriceDrafts() {
-        try {
-            return JSON.parse(localStorage.getItem(PRICE_STORAGE_KEY) || '{}');
-        } catch (e) {
-            return {};
-        }
+        return priceDrafts;
     }
 
     function writePriceDrafts(data) {
-        localStorage.setItem(PRICE_STORAGE_KEY, JSON.stringify(data));
+        priceDrafts = data;
     }
 
     function getDraftForHall(hallId) {
@@ -639,13 +635,14 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-       pricesForm.addEventListener('submit', function(event) {
+        pricesForm.addEventListener('submit', function(event) {
                 event.preventDefault();
                 const hallId = pricesForm.dataset.hallId;
                 if (!hallId) return;
                 const formData = new FormData(pricesForm);
                 fetch(pricesForm.action, {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
@@ -657,14 +654,18 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (!resp.ok) {
                             throw new Error('save_failed');
                         }
-                        return resp.json();
+                        try {
+                            return await resp.json();
+                        } catch (error) {
+                            return null;
+                        }
                     })
                     .then(data => {
-                        if (!data || !data.success) {
+                        if (data && !data.success) {
                             throw new Error('save_failed');
                         }
                         if (!window.pricesFromServer) window.pricesFromServer = {};
-                        window.pricesFromServer[hallId] = data.prices || {
+                        window.pricesFromServer[hallId] = (data && data.prices) ? data.prices : {
                             standart: inputStd ? inputStd.value : '',
                             vip: inputVip ? inputVip.value : ''
                         };
