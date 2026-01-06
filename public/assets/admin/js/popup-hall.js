@@ -364,7 +364,10 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEmptyStateSelectors();
         showHallSchemeBlockIfNeeded();
         persistCurrentPricesDraft();
-        showPricesFormBlockForHall(hallId);
+        const selectedPricesHall = document.querySelector('input[name="prices-hall"]:checked');
+        if (selectedPricesHall) {
+            showPricesFormBlockForHall(selectedPricesHall.value);
+        }
         bindDeleteButtons();
     }
 
