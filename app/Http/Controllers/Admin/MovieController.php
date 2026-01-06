@@ -27,6 +27,23 @@ class MovieController extends Controller
             'description' => 'nullable|string',
             'country'  => 'nullable|string|max:255',
         ]);
+
+        $duplicateMovie = Movie::where('title', $validated['title'])
+            ->where('duration', $validated['duration'])
+            ->first();
+        if ($duplicateMovie) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Такой фильм уже существует.'
+                ], 422);
+            }
+
+            return redirect()
+                ->route('admin.movies.index')
+                ->withErrors(['title' => 'Такой фильм уже существует.']);
+        }
+
         $movie = Movie::create($validated);
 
         if ($request->ajax()) {
