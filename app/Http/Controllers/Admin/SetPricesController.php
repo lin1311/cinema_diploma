@@ -46,11 +46,19 @@ class SetPricesController extends Controller
         };
 
         $standart = $normalize($standart);
-        $vip      = $normalize($vip);
+        $vip = $normalize($vip);
 
-        $chairTypes   = ChairType::orderBy('id')->get();
-        $standardType = $chairTypes[0] ?? null;
-        $vipType      = $chairTypes[1] ?? null;
+        if (ChairType::count() === 0) {
+            ChairType::firstOrCreate(['code' => 'standart'], ['title' => 'Обычное']);
+            ChairType::firstOrCreate(['code' => 'vip'], ['title' => 'VIP']);
+        }
+
+        $chairTypes = ChairType::orderBy('id')->get();
+        $standardType = $chairTypes->firstWhere('code', 'standart')
+            ?? $chairTypes->firstWhere('code', 'standard')
+            ?? $chairTypes[0] ?? null;
+        $vipType = $chairTypes->firstWhere('code', 'vip')
+            ?? $chairTypes[1] ?? null;
 
         // стандартные кресла
         if ($standardType) {

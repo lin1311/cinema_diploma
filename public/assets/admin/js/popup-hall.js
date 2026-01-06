@@ -83,6 +83,20 @@ document.addEventListener('DOMContentLoaded', function() {
         writePriceDrafts(drafts);
     }
 
+    function persistCurrentPricesDraft() {
+        const form = document.querySelector('.prices-form-block form.hall-form');
+        if (!form) return;
+        const hallId = form.dataset.hallId;
+        if (!hallId) return;
+        const inputStd = form.querySelector('input[name="prices[standart]"]');
+        const inputVip = form.querySelector('input[name="prices[vip]"]');
+        setDraftForHall(hallId, {
+            standart: inputStd ? inputStd.value : '',
+            vip: inputVip ? inputVip.value : ''
+        });
+    }
+
+
     // ======== Хелперы по состоянию «есть/нет залов» ========
     function hasAnyHalls() {
         return !!document.querySelector('.conf-step__list li[data-hall-id]');
@@ -349,6 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         updateEmptyStateTopList();
         updateEmptyStateSelectors();
         showHallSchemeBlockIfNeeded();
+        persistCurrentPricesDraft();
         showPricesFormBlockForHall(hallId);
         bindDeleteButtons();
     }
@@ -633,50 +648,51 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (inputVip) inputVip.value = serverPrices.vip != null ? serverPrices.vip : '';
                 }, 0);
             });
-        }
 
-        pricesForm.addEventListener('submit', function(event) {
-                event.preventDefault();
-                const hallId = pricesForm.dataset.hallId;
-                if (!hallId) return;
-                const formData = new FormData(pricesForm);
-                fetch(pricesForm.action, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                        ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
-                    },
-                    body: formData
-                })
-                    .then(async resp => {
-                        if (!resp.ok) {
-                            throw new Error('save_failed');
-                        }
-                        try {
-                            return await resp.json();
-                        } catch (error) {
-                            return null;
-                        }
+            pricesForm.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const hallId = pricesForm.dataset.hallId;
+                    if (!hallId) return;
+                    const formData = new FormData(pricesForm);
+                    fetch(pricesForm.action, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            ...(csrfToken ? { 'X-CSRF-TOKEN': csrfToken } : {})
+                        },
+                        body: formData
                     })
-                    .then(data => {
-                        if (data && !data.success) {
-                            throw new Error('save_failed');
-                        }
-                        if (!window.pricesFromServer) window.pricesFromServer = {};
-                        window.pricesFromServer[hallId] = (data && data.prices) ? data.prices : {
-                            standart: inputStd ? inputStd.value : '',
-                            vip: inputVip ? inputVip.value : ''
-                        };
-                        clearDraftForHall(hallId);
-                        if (inputStd) inputStd.dataset.base = window.pricesFromServer[hallId].standart ?? '';
-                        if (inputVip) inputVip.dataset.base = window.pricesFromServer[hallId].vip ?? '';
-                    })
-                    .catch(() => {
-                        alert('Не удалось сохранить цены.');
-                    });
-        });
+                        .then(async resp => {
+                            if (!resp.ok) {
+                                throw new Error('save_failed');
+                            }
+                            try {
+                                return await resp.json();
+                            } catch (error) {
+                                return null;
+                            }
+                        })
+                        .then(data => {
+                            if (data && !data.success) {
+                                throw new Error('save_failed');
+                            }
+                            if (!window.pricesFromServer) window.pricesFromServer = {};
+                            window.pricesFromServer[hallId] = (data && data.prices) ? data.prices : {
+                                standart: inputStd ? inputStd.value : '',
+                                vip: inputVip ? inputVip.value : ''
+                            };
+                            clearDraftForHall(hallId);
+                            if (inputStd) inputStd.dataset.base = window.pricesFromServer[hallId].standart ?? '';
+                            if (inputVip) inputVip.dataset.base = window.pricesFromServer[hallId].vip ?? '';
+                            alert('Сохранено!');
+                        })
+                        .catch(() => {
+                            alert('Не удалось сохранить цены.');
+                        });
+            });
+        }
 
         document.addEventListener('click', function (e) {
             const header = e.target.closest('.conf-step__header');

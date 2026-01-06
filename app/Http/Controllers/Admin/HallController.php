@@ -33,6 +33,10 @@ class HallController extends Controller
         }
 
         // Типы кресел
+        if (ChairType::count() === 0) {
+            ChairType::firstOrCreate(['code' => 'standart'], ['title' => 'Обычное']);
+            ChairType::firstOrCreate(['code' => 'vip'], ['title' => 'VIP']);
+        }
         $chairTypes = ChairType::orderBy('id')->get();
 
         // Цены по залам и типам
@@ -43,7 +47,8 @@ class HallController extends Controller
                     ->where('chair_type_id', $type->id)
                     ->value('price');
 
-                $prices[$hall->id][$type->code] = $price !== null ? (int) $price : null;
+                $code = $type->code === 'standard' ? 'standart' : $type->code;
+                $prices[$hall->id][$code] = $price !== null ? (int) $price : null;
             }
         }
 
