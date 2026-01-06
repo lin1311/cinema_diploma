@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     window.updateMoviesEmptyState = updateMoviesEmptyState;
+    updateMoviesEmptyState();
     // ===== Открытие попапа =====
     const openBtn = document.getElementById('create-movie-btn');
     const popup = document.getElementById('add-movie-popup');
@@ -89,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             <h3 class="conf-step__movie-title">${data.movie.title}</h3>
                             <p class="conf-step__movie-duration">${data.movie.duration} минут</p>
                         </div>`);
+                        updateMoviesEmptyState();
                     }
                 } else {
                     alert(data.message || 'Ошибка при добавлении фильма');

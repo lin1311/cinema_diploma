@@ -358,6 +358,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 `
             );
+            const seancesWrapper = seancesContainer.closest('.conf-step__wrapper');
+            const buttons = seancesWrapper?.querySelector('.conf-step__buttons');
+            if (buttons) {
+                seancesWrapper.appendChild(buttons);
+            }
         }
 
         updateEmptyStateTopList();

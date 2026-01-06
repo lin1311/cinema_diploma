@@ -576,6 +576,10 @@ input[type='radio'], input[type='submit'], button, .conf-step__header, select {
 
 .conf-step__seances-hall {
   margin: 35px;
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  display: block;
 }
 
 .conf-step__seances-title {
