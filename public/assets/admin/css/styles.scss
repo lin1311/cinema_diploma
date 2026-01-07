@@ -592,7 +592,7 @@ input[type='radio'], input[type='submit'], button, .conf-step__header, select {
   position: relative;
   outline: 1px solid $grey;
   padding: 10px 0;
-  height: 60px;
+  height: 40px;
   box-sizing: content-box;
   width: calc(1440px * 0.5); //1440 минут в сутках. 1 минута = 0,5 пикселя. Блок фильма длиной 120 минут будет 60 пикселей по ширине.
 }

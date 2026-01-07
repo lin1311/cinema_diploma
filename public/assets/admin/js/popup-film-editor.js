@@ -46,6 +46,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     card.querySelector('.conf-step__movie-title').textContent = data.movie.title;
                     card.querySelector('.conf-step__movie-duration').textContent = data.movie.duration + ' минут';
                 }
+                document
+                    .querySelectorAll(`.conf-step__seances-movie[data-movie-id="${data.movie.id}"] .conf-step__seances-movie-title`)
+                    .forEach((titleNode) => {
+                        titleNode.textContent = data.movie.title;
+                    });
                 editPopup.classList.remove('active');
                 editPopup.style.display = 'none';
             } else {

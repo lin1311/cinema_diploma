@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const deleteBtn = editPopup.querySelector('[data-action="delete"]');
 
     const minutesToPixels = 0.5;
-    const maxMovieWidth = 60;
     const movieColors = [
         'rgb(133, 255, 137)',
         'rgb(202, 255, 133)',
@@ -178,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return null;
         }
 
-        const width = Math.min(movieInfo.duration * minutesToPixels, maxMovieWidth);
+        const width = movieInfo.duration * minutesToPixels;
         const left = startMinutes * minutesToPixels;
         const seance = document.createElement('div');
         seance.classList.add('conf-step__seances-movie');
@@ -196,6 +195,54 @@ document.addEventListener('DOMContentLoaded', function () {
         return seance;
     };
 
+    const hydrateSeances = () => {
+        if (!Array.isArray(window.seancesFromServer)) {
+            return;
+        }
+        window.seancesFromServer.forEach((seance) => {
+            renderSeance({
+                hallId: String(seance.hall_id),
+                filmId: String(seance.movie_id),
+                startTime: seance.start_time,
+                seanceId: String(seance.id)
+            });
+        });
+    };
+
+    const saveSeances = () => {
+        const token = document.querySelector('meta[name="csrf-token"]')?.content;
+        const seanceNodes = Array.from(document.querySelectorAll('.conf-step__seances-movie'));
+        const payload = seanceNodes.map((node) => {
+            const hallId = node.closest('.conf-step__seances-hall')?.dataset.hall;
+            return {
+                hall_id: Number.parseInt(hallId, 10),
+                movie_id: Number.parseInt(node.dataset.movieId, 10),
+                start_time: node.dataset.startTime
+            };
+        }).filter((seance) => Number.isFinite(seance.hall_id)
+            && Number.isFinite(seance.movie_id)
+            && seance.start_time);
+
+        fetch('/admin/seances', {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Content-Type': 'application/json',
+                ...(token ? { 'X-CSRF-TOKEN': token } : {})
+            },
+            body: JSON.stringify({ seances: payload })
+        })
+            .then((resp) => resp.json())
+            .then((data) => {
+                if (!data?.success) {
+                    alert('Не удалось сохранить сеансы.');
+                }
+            })
+            .catch(() => {
+                alert('Не удалось сохранить сеансы.');
+            });
+    };
+
     if (addForm) {
         addForm.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -209,6 +256,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const seanceId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
             renderSeance({ hallId, filmId, startTime, seanceId });
             closeAddPopup();
+        });
+    }
+    
+    const seancesWrapper = document.querySelector('.conf-step__seances')?.closest('.conf-step__wrapper');
+    const saveBtn = seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            saveSeances();
         });
     }
 

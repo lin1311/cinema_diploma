@@ -7,6 +7,7 @@ use App\Models\Hall;
 use App\Models\ChairType;
 use App\Models\ChairPrice;
 use App\Models\Movie;
+use App\Models\Seance;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -53,13 +54,15 @@ class HallController extends Controller
         }
 
         $movies = Movie::orderBy('id')->get();
+        $seances = Seance::orderBy('start_time')->get(['id', 'hall_id', 'movie_id', 'start_time']);
 
         return view('admin.index', compact(
             'halls',
             'hallSchemes',
             'movies',
             'chairTypes',
-            'prices'
+            'prices',
+            'seances'
         ));
     }
 
