@@ -57,6 +57,17 @@ document.addEventListener('DOMContentLoaded', function () {
         return hours * 60 + minutes;
     };
 
+    const normalizeTime = (time) => {
+        if (!time) {
+            return time;
+        }
+        const [hours, minutes] = time.split(':');
+        if (hours === undefined || minutes === undefined) {
+            return time;
+        }
+        return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+    };
+
     const getMovieColor = (movieId) => {
         const numericId = Number.parseInt(movieId, 10);
         const index = Number.isNaN(numericId) ? 0 : Math.abs(numericId) % movieColors.length;
@@ -171,7 +182,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const renderSeance = ({ hallId, filmId, startTime, seanceId }) => {
         const movieInfo = getMovieInfo(filmId);
-        const startMinutes = parseTimeToMinutes(startTime);
+        const normalizedStartTime = normalizeTime(startTime);
+        const startMinutes = parseTimeToMinutes(normalizedStartTime);
         if (!movieInfo || startMinutes === null) {
             return null;
         }
@@ -188,6 +200,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const seance = document.createElement('div');
         seance.classList.add('conf-step__seances-movie');
         seance.dataset.movieId = filmId;
+        seance.dataset.startTime = normalizedStartTime;
         seance.dataset.startTime = startTime;
         seance.dataset.seanceId = seanceId;
         seance.style.width = `${width}px`;
@@ -195,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function () {
         seance.style.backgroundColor = getMovieColor(filmId);
         seance.innerHTML = `
             <p class="conf-step__seances-movie-title">${movieInfo.title}</p>
-            <p class="conf-step__seances-movie-start">${startTime}</p>
+            <p class="conf-step__seances-movie-start">${normalizedStartTime}</p>
         `;
         timeline.appendChild(seance);
         return seance;
@@ -241,11 +254,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .then((resp) => resp.json())
             .then((data) => {
                 if (!data?.success) {
-                    alert('Не удалось сохранить сеансы.');
+                    updateSaveStatus('Не удалось сохранить сеансы.', false);
+                    return;
                 }
+                updateSaveStatus('Сеансы сохранены.', true);
             })
             .catch(() => {
-                alert('Не удалось сохранить сеансы.');
+                updateSaveStatus('Не удалось сохранить сеансы.', false);
             });
     };
 
@@ -267,6 +282,32 @@ document.addEventListener('DOMContentLoaded', function () {
     
     const seancesWrapper = document.querySelector('.conf-step__seances')?.closest('.conf-step__wrapper');
     const saveBtn = document.getElementById('save-seances-btn') || seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
+    const ensureSaveStatus = () => {
+        if (!seancesWrapper) {
+            return null;
+        }
+        let status = seancesWrapper.querySelector('.conf-step__seances-save-status');
+        if (!status) {
+            const buttons = seancesWrapper.querySelector('.conf-step__buttons');
+            status = document.createElement('p');
+            status.classList.add('conf-step__seances-save-status');
+            if (buttons) {
+                buttons.insertAdjacentElement('afterend', status);
+            } else {
+                seancesWrapper.appendChild(status);
+            }
+        }
+        return status;
+    };
+
+    const updateSaveStatus = (message, isSuccess) => {
+        const status = ensureSaveStatus();
+        if (!status) {
+            return;
+        }
+        status.textContent = message;
+        status.style.color = isSuccess ? 'green' : 'red';
+    };
     if (saveBtn) {
         saveBtn.addEventListener('click', function (event) {
             event.preventDefault();

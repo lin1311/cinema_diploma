@@ -6,11 +6,12 @@ use App\Http\Controllers\Admin\HallSchemeController;
 use App\Http\Controllers\Admin\SetPricesController;
 use App\Http\Controllers\Admin\MovieController;
 use App\Http\Controllers\Admin\SeanceController;
+use App\Http\Controllers\SeanceScheduleController;
 
 Route::get('/', function () {
     return view('welcome');
 });
-
+Route::get('/seances', [SeanceScheduleController::class, 'index'])->name('seances.index');
 
 // Главная админки (выводит залы — HallController)
 Route::get('/admin', [HallController::class, 'index'])->name('admin.halls.index');

@@ -9,6 +9,7 @@ use App\Models\ChairPrice;
 use App\Models\Movie;
 use App\Models\Seance;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 
 class HallController extends Controller
@@ -54,7 +55,16 @@ class HallController extends Controller
         }
 
         $movies = Movie::orderBy('id')->get();
-        $seances = Seance::orderBy('start_time')->get(['id', 'hall_id', 'movie_id', 'start_time']);
+        $seances = Seance::orderBy('start_time')
+            ->get(['id', 'hall_id', 'movie_id', 'start_time'])
+            ->map(function (Seance $seance) {
+                return [
+                    'id' => $seance->id,
+                    'hall_id' => $seance->hall_id,
+                    'movie_id' => $seance->movie_id,
+                    'start_time' => Carbon::parse($seance->start_time)->format('H:i'),
+                ];
+            });
 
         return view('admin.index', compact(
             'halls',
