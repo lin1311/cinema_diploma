@@ -4,7 +4,9 @@
 
 @section('content')
   <header class="page-header">
-    <h1 class="page-header__title">Идём<span>в</span>кино</h1>
+    <h1 class="page-header__title">
+      <a class="page-header__title-link" href="{{ url('/') }}">Идём<span>в</span>кино</a>
+    </h1>
   </header>
 
   <nav class="page-nav" data-role="date-slider">

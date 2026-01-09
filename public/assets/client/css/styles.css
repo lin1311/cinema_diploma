@@ -28,6 +28,19 @@ body {
   color: #FFFFFF;
   text-transform: uppercase;
 }
+
+.page-header__title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.page-header__title-link:visited {
+  color: inherit;
+}
+.page-header__title-link:hover,
+.page-header__title-link:focus {
+  text-decoration: none;
+}
+
 .page-header__title span {
   font-weight: 100;
 }
