@@ -16,6 +16,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const editStartTimeInput = editPopup.querySelector('#edit-seance-start-time');
     const deleteBtn = editPopup.querySelector('[data-action="delete"]');
 
+    const removePopup = document.getElementById('remove-seance-popup');
+    const removeForm = removePopup?.querySelector('#remove-seance-form');
+    const removeTitle = removePopup?.querySelector('#remove-seance-title');
+    const removeCancelBtn = removePopup?.querySelector('#remove-seance-cancel');
+    const removeCloseBtn = removePopup?.querySelector('.popup__dismiss');
+
     const minutesToPixels = 0.5;
     const movieColors = [
         'rgb(133, 255, 137)',
@@ -260,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     const seancesWrapper = document.querySelector('.conf-step__seances')?.closest('.conf-step__wrapper');
-    const saveBtn = seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
+    const saveBtn = document.getElementById('save-seances-btn') || seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
     if (saveBtn) {
         saveBtn.addEventListener('click', function (event) {
             event.preventDefault();
@@ -272,6 +278,20 @@ document.addEventListener('DOMContentLoaded', function () {
         editForm?.reset();
         editPopup.classList.remove('active');
         editPopup.dataset.activeSeanceId = '';
+    };
+
+    const closeRemovePopup = () => {
+        if (!removePopup) {
+            return;
+        }
+        removePopup.classList.remove('active');
+        removePopup.style.display = 'none';
+        if (removeForm) {
+            removeForm.dataset.seanceId = '';
+        }
+        if (removeTitle) {
+            removeTitle.textContent = '';
+        }
     };
 
     const closeEditBtn = editPopup.querySelector('.popup__dismiss');
@@ -308,20 +328,45 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const existing = document.querySelector(`.conf-step__seances-movie[data-seance-id="${seanceId}"]`);
-            if (!existing) {
+             if (!existing || !removePopup || !removeForm || !removeTitle) {
                 return;
             }
 
-            existing.remove();
-            renderSeance({ hallId, filmId, startTime, seanceId });
+            const movieTitle = existing.querySelector('.conf-step__seances-movie-title')?.textContent?.trim() || '';
+            removeTitle.textContent = movieTitle ? `"${movieTitle}"` : '';
+            removeForm.dataset.seanceId = seanceId;
+            removePopup.style.display = '';
+            removePopup.classList.add('active');
             closeEditPopup();
         });
     }
 
-    if (deleteBtn) {
-        deleteBtn.addEventListener('click', function (event) {
+    if (removeCancelBtn) {
+        removeCancelBtn.addEventListener('click', function (event) {
             event.preventDefault();
-            const seanceId = editPopup.dataset.activeSeanceId;
+            closeRemovePopup();
+        });
+    }
+
+    if (removeCloseBtn) {
+        removeCloseBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            closeRemovePopup();
+        });
+    }
+
+    if (removePopup) {
+        removePopup.addEventListener('click', function (event) {
+            if (event.target === removePopup) {
+                closeRemovePopup();
+            }
+        });
+    }
+
+    if (removeForm) {
+        removeForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            const seanceId = removeForm.dataset.seanceId;
             if (!seanceId) {
                 return;
             }
@@ -329,7 +374,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (existing) {
                 existing.remove();
             }
-            closeEditPopup();
+            closeRemovePopup();
         });
     }
     hydrateSeances();

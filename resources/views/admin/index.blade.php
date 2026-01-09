@@ -238,7 +238,7 @@
         
         <fieldset class="conf-step__buttons text-center">
           <button class="conf-step__button conf-step__button-regular">Отмена</button>
-          <input type="submit" value="Сохранить" class="conf-step__button conf-step__button-accent">
+          <button type="button" id="save-seances-btn" class="conf-step__button conf-step__button-accent">Сохранить</button>
         </fieldset>  
       </div>
     </section>
@@ -263,6 +263,7 @@
   @include('admin.popup_delete-film')
   @include('admin.popup_add-seanse')
   @include('admin.popup_edit-seanse')
+  @include('admin.popup_remove-seance')
 @endsection
 
 @push('scripts')
