@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Client;
 
+use App\Http\Controllers\Controller;
 use App\Models\Publication;
 use App\Models\Movie;
 use Illuminate\View\View;
@@ -31,7 +32,7 @@ class ClientController extends Controller
             ->orderBy('id')
             ->get();
 
-        return view('client.index', [
+        return view('public.index', [
             'movies' => $moviesToShow,
             'hallsById' => $halls->keyBy('id'),
             'seancesByMovie' => $seancesByMovie,

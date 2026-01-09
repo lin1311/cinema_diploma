@@ -7,27 +7,13 @@
     <h1 class="page-header__title">Идём<span>в</span>кино</h1>
   </header>
 
-  <nav class="page-nav">
-    <a class="page-nav__day page-nav__day_today" href="#">
-      <span class="page-nav__day-week">Пн</span><span class="page-nav__day-number">31</span>
-    </a>
-    <a class="page-nav__day" href="#">
-      <span class="page-nav__day-week">Вт</span><span class="page-nav__day-number">1</span>
-    </a>
-    <a class="page-nav__day page-nav__day_chosen" href="#">
-      <span class="page-nav__day-week">Ср</span><span class="page-nav__day-number">2</span>
-    </a>
-    <a class="page-nav__day" href="#">
-      <span class="page-nav__day-week">Чт</span><span class="page-nav__day-number">3</span>
-    </a>
-    <a class="page-nav__day" href="#">
-      <span class="page-nav__day-week">Пт</span><span class="page-nav__day-number">4</span>
-    </a>
-    <a class="page-nav__day page-nav__day_weekend" href="#">
-      <span class="page-nav__day-week">Сб</span><span class="page-nav__day-number">5</span>
-    </a>
-    <a class="page-nav__day page-nav__day_next" href="#">
-    </a>
+  <nav class="page-nav" data-role="date-slider">
+    @for ($i = 0; $i < 6; $i++)
+      <a class="page-nav__day" href="#" data-role="date-day">
+        <span class="page-nav__day-week"></span><span class="page-nav__day-number"></span>
+      </a>
+    @endfor
+    <a class="page-nav__day page-nav__day_next" href="#" data-role="date-next"></a>
   </nav>
 
   <main>
@@ -79,4 +65,5 @@
       </section>
     @endforelse
   </main>
+  <script src="{{ asset('assets/client/js/data_slider.js') }}"></script>
 @endsection
