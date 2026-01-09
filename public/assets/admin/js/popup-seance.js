@@ -201,7 +201,6 @@ document.addEventListener('DOMContentLoaded', function () {
         seance.classList.add('conf-step__seances-movie');
         seance.dataset.movieId = filmId;
         seance.dataset.startTime = normalizedStartTime;
-        seance.dataset.startTime = startTime;
         seance.dataset.seanceId = seanceId;
         seance.style.width = `${width}px`;
         seance.style.left = `${left}px`;
@@ -254,13 +253,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .then((resp) => resp.json())
             .then((data) => {
                 if (!data?.success) {
-                    updateSaveStatus('Не удалось сохранить сеансы.', false);
+                    updateSaveStatus('Не удалось сохранить сеансы.');
                     return;
                 }
-                updateSaveStatus('Сеансы сохранены.', true);
+                updateSaveStatus('Сеансы сохранены.');
             })
             .catch(() => {
-                updateSaveStatus('Не удалось сохранить сеансы.', false);
+                updateSaveStatus('Не удалось сохранить сеансы.');
             });
     };
 
@@ -282,32 +281,11 @@ document.addEventListener('DOMContentLoaded', function () {
     
     const seancesWrapper = document.querySelector('.conf-step__seances')?.closest('.conf-step__wrapper');
     const saveBtn = document.getElementById('save-seances-btn') || seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
-    const ensureSaveStatus = () => {
-        if (!seancesWrapper) {
-            return null;
+    const updateSaveStatus = (message) => {
+        if (message) {
+            window.alert(message);
         }
-        let status = seancesWrapper.querySelector('.conf-step__seances-save-status');
-        if (!status) {
-            const buttons = seancesWrapper.querySelector('.conf-step__buttons');
-            status = document.createElement('p');
-            status.classList.add('conf-step__seances-save-status');
-            if (buttons) {
-                buttons.insertAdjacentElement('afterend', status);
-            } else {
-                seancesWrapper.appendChild(status);
-            }
-        }
-        return status;
-    };
-
-    const updateSaveStatus = (message, isSuccess) => {
-        const status = ensureSaveStatus();
-        if (!status) {
-            return;
-        }
-        status.textContent = message;
-        status.style.color = isSuccess ? 'green' : 'red';
-    };
+    }
     if (saveBtn) {
         saveBtn.addEventListener('click', function (event) {
             event.preventDefault();
@@ -357,6 +335,57 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
+    const updateSeanceElement = (seance, { hallId, filmId, startTime }) => {
+        const movieInfo = getMovieInfo(filmId);
+        const normalizedStartTime = normalizeTime(startTime);
+        const startMinutes = parseTimeToMinutes(normalizedStartTime);
+        if (!movieInfo || startMinutes === null) {
+            return false;
+        }
+
+        const targetTimeline = document.querySelector(
+            `.conf-step__seances-hall[data-hall="${hallId}"] .conf-step__seances-timeline`
+        );
+        if (!targetTimeline) {
+            return false;
+        }
+
+        const width = movieInfo.duration * minutesToPixels;
+        const left = startMinutes * minutesToPixels;
+        seance.dataset.movieId = filmId;
+        seance.dataset.startTime = normalizedStartTime;
+        seance.style.width = `${width}px`;
+        seance.style.left = `${left}px`;
+        seance.style.backgroundColor = getMovieColor(filmId);
+        const titleNode = seance.querySelector('.conf-step__seances-movie-title');
+        if (titleNode) {
+            titleNode.textContent = movieInfo.title;
+        }
+        const timeNode = seance.querySelector('.conf-step__seances-movie-start');
+        if (timeNode) {
+            timeNode.textContent = normalizedStartTime;
+        }
+        if (seance.parentElement !== targetTimeline) {
+            targetTimeline.appendChild(seance);
+        }
+        return true;
+    };
+
+    const openRemovePopup = (seanceId) => {
+        if (!removePopup || !removeForm || !removeTitle) {
+            return;
+        }
+        const existing = document.querySelector(`.conf-step__seances-movie[data-seance-id="${seanceId}"]`);
+        if (!existing) {
+            return;
+        }
+        const movieTitle = existing.querySelector('.conf-step__seances-movie-title')?.textContent?.trim() || '';
+        removeTitle.textContent = movieTitle ? `"${movieTitle}"` : '';
+        removeForm.dataset.seanceId = seanceId;
+        removePopup.style.display = '';
+        removePopup.classList.add('active');
+    };
+
     if (editForm) {
         editForm.addEventListener('submit', function (event) {
             event.preventDefault();
@@ -369,15 +398,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             const existing = document.querySelector(`.conf-step__seances-movie[data-seance-id="${seanceId}"]`);
-             if (!existing || !removePopup || !removeForm || !removeTitle) {
+              if (!existing) {
                 return;
             }
 
-            const movieTitle = existing.querySelector('.conf-step__seances-movie-title')?.textContent?.trim() || '';
-            removeTitle.textContent = movieTitle ? `"${movieTitle}"` : '';
-            removeForm.dataset.seanceId = seanceId;
-            removePopup.style.display = '';
-            removePopup.classList.add('active');
+             const updated = updateSeanceElement(existing, { hallId, filmId, startTime });
+            if (updated) {
+                closeEditPopup();
+            }
+        });
+    }
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            const seanceId = editPopup.dataset.activeSeanceId;
+            if (!seanceId) {
+                return;
+            }
+            openRemovePopup(seanceId);
             closeEditPopup();
         });
     }
