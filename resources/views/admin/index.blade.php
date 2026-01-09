@@ -268,6 +268,7 @@
 @push('scripts')
   <script> window.hallSchemeFromServer = @json($hallSchemes ?? [])</script>
   <script> window.pricesFromServer = @json($prices ?? [])</script>
+  <script> window.seancesFromServer = @json($seances ?? [])</script>
   <script src="{{ asset('assets/admin/js/accordeon.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-hall.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-film.js') }}"></script>

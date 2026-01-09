@@ -332,6 +332,7 @@ document.addEventListener('DOMContentLoaded', function () {
             closeEditPopup();
         });
     }
+    hydrateSeances();
 });
 
 
