@@ -7,11 +7,10 @@ use App\Http\Controllers\Admin\SetPricesController;
 use App\Http\Controllers\Admin\MovieController;
 use App\Http\Controllers\Admin\SeanceController;
 use App\Http\Controllers\Admin\PublicationController;
+use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\SeanceScheduleController;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', [ClientController::class, 'index'])->name('client.index');
 Route::get('/seances', [SeanceScheduleController::class, 'index'])->name('seances.index');
 
 // Главная админки (выводит залы — HallController)

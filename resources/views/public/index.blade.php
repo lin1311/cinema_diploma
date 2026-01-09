@@ -1,7 +1,12 @@
-<header class="page-header">
+@extends('layouts.app')
+
+@section('title', 'ИдёмВКино')
+
+@section('content')
+  <header class="page-header">
     <h1 class="page-header__title">Идём<span>в</span>кино</h1>
   </header>
-  
+
   <nav class="page-nav">
     <a class="page-nav__day page-nav__day_today" href="#">
       <span class="page-nav__day-week">Пн</span><span class="page-nav__day-number">31</span>
@@ -24,110 +29,54 @@
     <a class="page-nav__day page-nav__day_next" href="#">
     </a>
   </nav>
-  
+
   <main>
-    <section class="movie">
-      <div class="movie__info">
-        <div class="movie__poster">
-          <img class="movie__poster-image" alt="Звёздные войны постер" src="i/poster1.jpg">
+    @forelse ($movies as $movie)
+      <section class="movie">
+        <div class="movie__info">
+          <div class="movie__poster">
+            <img class="movie__poster-image" alt="{{ $movie->title ?? 'Постер фильма' }}"
+                 src="{{ $movie->poster_url ?? asset('assets/client/i/poster1.jpg') }}">
+          </div>
+          <div class="movie__description">
+            <h2 class="movie__title">{{ $movie->title ?? 'Без названия' }}</h2>
+            @if (!empty($movie->description))
+              <p class="movie__synopsis">{{ $movie->description }}</p>
+            @endif
+            <p class="movie__data">
+              @if (!empty($movie->duration))
+                <span class="movie__data-duration">{{ $movie->duration }} минут</span>
+              @endif
+              @if (!empty($movie->country))
+                <span class="movie__data-origin">{{ $movie->country }}</span>
+              @endif
+            </p>
+          </div>
         </div>
-        <div class="movie__description">
-          <h2 class="movie__title">Звёздные войны XXIII: Атака клонированных клонов</h2>
-          <p class="movie__synopsis">Две сотни лет назад малороссийские хутора разоряла шайка нехристей-ляхов во главе с могущественным колдуном.</p>
-          <p class="movie__data">
-            <span class="movie__data-duration">130 минут</span>
-            <span class="movie__data-origin">США</span>
-          </p>
+
+        @foreach ($seancesByMovie->get($movie->id, collect()) as $hallId => $hallSeances)
+          @php $hall = $hallsById[$hallId] ?? null; @endphp
+          <div class="movie-seances__hall">
+            <h3 class="movie-seances__hall-title">{{ $hall['name'] ?? 'Зал' }}</h3>
+            <ul class="movie-seances__list">
+              @foreach ($hallSeances as $seance)
+                <li class="movie-seances__time-block">
+                  <a class="movie-seances__time" href="#">{{ $seance['start_time'] }}</a>
+                </li>
+              @endforeach
+            </ul>
+          </div>
+        @endforeach
+      </section>
+    @empty
+      <section class="movie">
+        <div class="movie__info">
+          <div class="movie__description">
+            <h2 class="movie__title">Нет опубликованных сеансов</h2>
+            <p class="movie__synopsis">Администратор ещё не опубликовал расписание сеансов.</p>
+          </div>
         </div>
-      </div>  
-      
-      <div class="movie-seances__hall">
-        <h3 class="movie-seances__hall-title">Зал 1</h3>
-        <ul class="movie-seances__list">
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">10:20</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:10</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:40</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">22:00</a></li>
-        </ul>
-      </div>
-      <div class="movie-seances__hall">
-        <h3 class="movie-seances__hall-title">Зал 2</h3>
-        <ul class="movie-seances__list">
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">11:15</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:40</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">16:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:30</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">21:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">23:30</a></li>     
-        </ul>
-      </div>      
-    </section>
-    
-    <section class="movie">
-      <div class="movie__info">      
-        <div class="movie__poster">
-          <img class="movie__poster-image" alt="Альфа постер" src="i/poster2.jpg">
-        </div>
-        <div class="movie__description">        
-          <h2 class="movie__title">Альфа</h2>
-          <p class="movie__synopsis">20 тысяч лет назад Земля была холодным и неуютным местом, в котором смерть подстерегала человека на каждом шагу.</p>
-          <p class="movie__data">
-            <span class="movie__data-duration">96 минут</span>
-            <span class="movie__data-origin">Франция</span>
-          </p>
-        </div>    
-      </div>  
-      <div class="movie-seances__hall">
-        <h3 class="movie-seances__hall-title">Зал 1</h3>
-        <ul class="movie-seances__list">
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">10:20</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:10</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:40</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">22:00</a></li>
-        </ul>
-      </div>
-      <div class="movie-seances__hall">
-        <h3 class="movie-seances__hall-title">Зал 2</h3>
-        <ul class="movie-seances__list">
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">11:15</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:40</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">16:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:30</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">21:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">23:30</a></li>     
-        </ul>
-      </div>      
-    </section>   
-    
-    <section class="movie">
-      <div class="movie__info">      
-        <div class="movie__poster">
-          <img class="movie__poster-image" alt="Хищник постер" src="i/poster2.jpg">
-        </div>
-        <div class="movie__description">        
-          <h2 class="movie__title">Хищник</h2>
-          <p class="movie__synopsis">Самые опасные хищники Вселенной, прибыв из глубин космоса, высаживаются на улицах маленького городка, чтобы начать свою кровавую охоту. Генетически модернизировав себя с помощью ДНК других видов, охотники стали ещё сильнее, умнее и беспощаднее.</p>
-          <p class="movie__data">
-            <span class="movie__data-duration">101 минута</span>
-            <span class="movie__data-origin">Канада, США</span>
-          </p>
-        </div>    
-      </div>  
-      <div class="movie-seances__hall">
-        <h3 class="movie-seances__hall-title">Зал 1</h3>
-        <ul class="movie-seances__list">
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">09:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">10:10</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">12:55</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:15</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">14:50</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">16:30</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:00</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">18:50</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">19:50</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">20:55</a></li>
-          <li class="movie-seances__time-block"><a class="movie-seances__time" href="hall.html">22:00</a></li>
-        </ul>
-      </div>     
-    </section>     
+      </section>
+    @endforelse
   </main>
+@endsection
