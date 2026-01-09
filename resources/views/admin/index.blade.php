@@ -249,7 +249,8 @@
       </header>
       <div class="conf-step__wrapper text-center">
         <p class="conf-step__paragraph">Всё готово, теперь можно:</p>
-        <button class="conf-step__button conf-step__button-accent">Открыть продажу билетов</button>
+        <button id="publish-sales-btn" class="conf-step__button conf-step__button-accent">Открыть продажу билетов</button>
+        <p id="publish-sales-status" class="conf-step__wrapper__save-status" role="status" aria-live="polite"></p>
       </div>
     </section>    
   </main>
@@ -277,4 +278,5 @@
   <script src="{{ asset('assets/admin/js/popup-film-remove.js') }}"></script>
   <script src="{{ asset('assets/admin/js/popup-seance.js') }}"></script>
   <script src="{{ asset('assets/admin/js/hall-seats-setup.js') }}"></script>
+  <script src="{{ asset('assets/admin/js/publication.js') }}"></script>
 @endpush

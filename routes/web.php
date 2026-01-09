@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\HallSchemeController;
 use App\Http\Controllers\Admin\SetPricesController;
 use App\Http\Controllers\Admin\MovieController;
 use App\Http\Controllers\Admin\SeanceController;
+use App\Http\Controllers\Admin\PublicationController;
 use App\Http\Controllers\SeanceScheduleController;
 
 Route::get('/', function () {
@@ -47,4 +48,5 @@ Route::prefix('admin')->group(function () {
     Route::delete('movies/{movie}', [MovieController::class, 'destroy'])->name('movies.destroy');
 
     Route::post('seances', [SeanceController::class, 'store'])->name('admin.seances.store');
+    Route::post('publications', [PublicationController::class, 'store'])->name('admin.publications.store');
 });
