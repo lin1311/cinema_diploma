@@ -213,18 +213,35 @@ document.addEventListener('DOMContentLoaded', function () {
         return seance;
     };
 
+    const buildSeanceId = (seance, index) => {
+        if (seance?.id !== undefined && seance?.id !== null) {
+            return String(seance.id);
+        }
+        return `${seance.hall_id}-${seance.movie_id}-${seance.start_time}-${index}`;
+    };
+
+
     const hydrateSeances = () => {
         if (!Array.isArray(window.seancesFromServer)) {
             return;
         }
-        window.seancesFromServer.forEach((seance) => {
+        window.seancesFromServer.forEach((seance, index) => {
             renderSeance({
                 hallId: String(seance.hall_id),
                 filmId: String(seance.movie_id),
                 startTime: seance.start_time,
-                seanceId: String(seance.id)
+                seanceId: buildSeanceId(seance, index)
             });
         });
+    };
+
+    const clearSeances = () => {
+        document.querySelectorAll('.conf-step__seances-movie').forEach((node) => node.remove());
+    };
+
+    const resetSeances = () => {
+        clearSeances();
+        hydrateSeances();
     };
 
     const saveSeances = () => {
@@ -256,6 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     updateSaveStatus('Не удалось сохранить сеансы.');
                     return;
                 }
+                window.seancesFromServer = payload;
                 updateSaveStatus('Сеансы сохранены.');
             })
             .catch(() => {
@@ -281,6 +299,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
     const seancesWrapper = document.querySelector('.conf-step__seances')?.closest('.conf-step__wrapper');
     const saveBtn = document.getElementById('save-seances-btn') || seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-accent');
+    const cancelBtn = seancesWrapper?.querySelector('.conf-step__buttons .conf-step__button-regular');
     const updateSaveStatus = (message) => {
         if (message) {
             window.alert(message);
@@ -290,6 +309,13 @@ document.addEventListener('DOMContentLoaded', function () {
         saveBtn.addEventListener('click', function (event) {
             event.preventDefault();
             saveSeances();
+        });
+    }
+
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function (event) {
+            event.preventDefault();
+            resetSeances();
         });
     }
 
