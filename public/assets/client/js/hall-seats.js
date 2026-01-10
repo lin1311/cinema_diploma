@@ -1,4 +1,9 @@
 (() => {
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+      window.location.reload();
+    }
+  });
   const wrapper = document.querySelector('.buying-scheme__wrapper');
   if (!wrapper) {
     return;

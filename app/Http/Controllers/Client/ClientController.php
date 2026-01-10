@@ -85,23 +85,9 @@ class ClientController extends Controller
             ->all();
 
         $sessionKey = $this->reservationSessionKey($seance);
-        $request->session()->forget($sessionKey);
-        $pendingSeats = $request->session()->get($sessionKey, []);
+        $stageKey = $this->reservationStageKey($seance);
+        $request->session()->forget([$sessionKey, $stageKey]);
         $selectedSeats = [];
-
-        foreach ($pendingSeats as $seatKey => $seatData) {
-            if (empty($takenSeats[$seatKey])) {
-                $selectedSeats[$seatKey] = true;
-            }
-        }
-
-        if (count($selectedSeats) !== count($pendingSeats)) {
-            $cleanedSeats = [];
-            foreach ($selectedSeats as $seatKey => $selected) {
-                $cleanedSeats[$seatKey] = $pendingSeats[$seatKey];
-            }
-            $request->session()->put($sessionKey, $cleanedSeats);
-        }
 
         return view('public.hall', [
             'movie' => $movie ?? [],
@@ -231,7 +217,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function payment(Request $request, int $seance): View
+    public function payment(Request $request, int $seance)
     {
         $publication = Publication::latest('created_at')->first();
 
@@ -266,6 +252,7 @@ class ClientController extends Controller
         $pendingSeats = $request->session()->get($sessionKey, []);
 
         if (empty($pendingSeats)) {
+            $request->session()->forget($this->reservationStageKey($seance));
             return redirect()->route('client.hall', ['seance' => $seance]);
         }
 
@@ -284,6 +271,8 @@ class ClientController extends Controller
             $seatLabels[] = sprintf('Ряд %d место %d', $seatData['row'], $seatData['seat']);
         }
 
+        $request->session()->put($this->reservationStageKey($seance), 'payment');
+
         return view('public.payment', [
             'movie' => $movie ?? [],
             'hall' => $hall ?? [],
@@ -293,7 +282,7 @@ class ClientController extends Controller
         ]);
     }
 
-    public function ticket(Request $request, int $seance): View
+    public function ticket(Request $request, int $seance)
     {
         $publication = Publication::latest('created_at')->first();
 
@@ -328,6 +317,13 @@ class ClientController extends Controller
         $pendingSeats = $request->session()->get($sessionKey, []);
 
         if (empty($pendingSeats)) {
+            $request->session()->forget($this->reservationStageKey($seance));
+            return redirect()->route('client.hall', ['seance' => $seance]);
+        }
+
+        $stageKey = $this->reservationStageKey($seance);
+        if ($request->session()->get($stageKey) !== 'payment') {
+            $request->session()->forget([$sessionKey, $stageKey]);
             return redirect()->route('client.hall', ['seance' => $seance]);
         }
 
@@ -346,7 +342,7 @@ class ClientController extends Controller
             ->all();
 
         if (!empty($takenSeats)) {
-            $request->session()->forget($sessionKey);
+            $request->session()->forget([$sessionKey, $stageKey]);
 
             return redirect()->route('client.hall', ['seance' => $seance]);
         }
@@ -364,7 +360,7 @@ class ClientController extends Controller
             }
         });
 
-        $request->session()->forget($sessionKey);
+        $request->session()->forget([$sessionKey, $stageKey]);
 
         $seatLabels = [];
         $totalCost = 0;
@@ -392,6 +388,11 @@ class ClientController extends Controller
     private function reservationSessionKey(int $seance): string
     {
         return "reservations.pending.{$seance}";
+    }
+
+    private function reservationStageKey(int $seance): string
+    {
+        return "reservations.stage.{$seance}";
     }
 
     private function normalizeScheme(mixed $rawScheme): array
