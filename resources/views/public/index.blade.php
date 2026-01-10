@@ -51,11 +51,12 @@
                 @php
                   $seanceId = data_get($seance, 'id') ?? data_get($seance, 'seance_id');
                 @endphp
+                @continue(!$seanceId)
                 <li class="movie-seances__time-block">
                   <a class="movie-seances__time"
-                     href="{{ $seanceId ? route('client.hall', ['seance' => $seanceId]) : '#' }}"
+                     href="{{ route('client.hall', ['seance' => $seanceId]) }}"
                      data-role="seance-link"
-                     data-base-href="{{ $seanceId ? route('client.hall', ['seance' => $seanceId]) : '#' }}">
+                     data-base-href="{{ route('client.hall', ['seance' => $seanceId]) }}">
                     {{ data_get($seance, 'start_time') }}
                   </a>
                 </li>
