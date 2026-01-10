@@ -23,12 +23,9 @@
           <p>Тапните дважды,<br>чтобы увеличить</p>
         </div>
       </div>
-      @php
-        $selectedCount = is_array($selectedSeats ?? null) ? count($selectedSeats) : 0;
-      @endphp
       <div class="buying-scheme">
         <div class="buying-scheme__wrapper"
-             data-seat-toggle-url="{{ route('client.hall.toggle-seat', ['seance' => data_get($seance, 'id')]) }}">
+             data-seat-reserve-url="{{ route('client.hall.reserve', ['seance' => data_get($seance, 'id')]) }}">
           @foreach(($scheme['seatsGrid'] ?? []) as $rowIndex => $row)
             <div class="buying-scheme__row">
               @foreach($row as $seatIndex => $seatType)
@@ -77,12 +74,12 @@
                 <p class="buying-scheme__legend-price"><span class="buying-scheme__chair buying-scheme__chair_taken"></span> Занято</p>
                 <p class="buying-scheme__legend-price">
                     <span class="buying-scheme__chair buying-scheme__chair_selected"></span>
-                    Выбрано <span data-role="selected-count">@if($selectedCount > 0)({{ $selectedCount }})@endif</span>
+                    Выбрано <span data-role="selected-count"></span>
                 </p>
             </div>
         </div>
       </div>
-      <button class="acceptin-button" onclick="location.href='payment.html'">Забронировать</button>
+      <button class="acceptin-button" type="button" data-role="reserve-button">Забронировать</button>
     </section>
   </main>
   <script src="{{ asset('assets/client/js/hall-seats.js') }}"></script>

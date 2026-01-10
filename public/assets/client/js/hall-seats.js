@@ -5,8 +5,9 @@
   }
 
   const selectedCountEl = document.querySelector('[data-role="selected-count"]');
+  const reserveButton = document.querySelector('[data-role="reserve-button"]');
   const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-  const toggleUrl = wrapper.dataset.seatToggleUrl;
+  const reserveUrl = wrapper.dataset.seatReserveUrl;
 
   const updateSelectedCount = () => {
     if (!selectedCountEl) {
@@ -24,7 +25,7 @@
       return;
     }
 
-    if (!toggleUrl) {
+    if (!reserveUrl) {
       return;
     }
 
@@ -34,14 +35,14 @@
       return;
     }
 
-    const response = await fetch(toggleUrl, {
+    const response = await fetch(reserveUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-CSRF-TOKEN': csrfToken || '',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ row, seat }),
+      body: JSON.stringify({ row, seat, action: 'toggle' }),
     });
 
     if (!response.ok) {
@@ -64,6 +65,38 @@
 
     toggleSeatState(seatEl);
   });
+
+  if (reserveButton) {
+    reserveButton.addEventListener('click', async () => {
+      if (!reserveUrl) {
+        return;
+      }
+
+      const selectedSeats = wrapper.querySelectorAll('.buying-scheme__chair_selected');
+      if (selectedSeats.length === 0) {
+        return;
+      }
+
+      const response = await fetch(reserveUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken || '',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ action: 'reserve' }),
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      if (data.redirect) {
+        window.location.href = data.redirect;
+      }
+    });
+  }
 
   updateSelectedCount();
 })();

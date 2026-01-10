@@ -75,7 +75,7 @@ class ClientController extends Controller
         $date = $selectedDate ? Carbon::parse($selectedDate) : Carbon::today();
 
         $seatMap = SeatReservation::where('seance_id', $seance)
-            ->whereIn('status', ['taken', 'selected'])
+            ->where('status', 'taken')
             ->get()
             ->groupBy('status');
 
@@ -83,9 +83,23 @@ class ClientController extends Controller
             ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
             ->all();
 
-        $selectedSeats = $seatMap->get('selected', collect())
-            ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
-            ->all();
+        $sessionKey = $this->reservationSessionKey($seance);
+        $pendingSeats = $request->session()->get($sessionKey, []);
+        $selectedSeats = [];
+
+        foreach ($pendingSeats as $seatKey => $seatData) {
+            if (empty($takenSeats[$seatKey])) {
+                $selectedSeats[$seatKey] = true;
+            }
+        }
+
+        if (count($selectedSeats) !== count($pendingSeats)) {
+            $cleanedSeats = [];
+            foreach ($selectedSeats as $seatKey => $selected) {
+                $cleanedSeats[$seatKey] = $pendingSeats[$seatKey];
+            }
+            $request->session()->put($sessionKey, $cleanedSeats);
+        }
 
         return view('public.hall', [
             'movie' => $movie ?? [],
@@ -99,11 +113,12 @@ class ClientController extends Controller
         ]);
     }
 
-    public function toggleSeat(Request $request, int $seance)
+    public function reserveSeats(Request $request, int $seance)
     {
         $validated = $request->validate([
-            'row' => ['required', 'integer', 'min:1'],
-            'seat' => ['required', 'integer', 'min:1'],
+            'row' => ['nullable', 'integer', 'min:1'],
+            'seat' => ['nullable', 'integer', 'min:1'],
+            'action' => ['required', 'string', 'in:toggle,reserve'],
         ]);
 
         $publication = Publication::latest('created_at')->first();
@@ -126,6 +141,64 @@ class ClientController extends Controller
             return (int) ($item['id'] ?? 0) === (int) ($seanceData['hall_id'] ?? 0);
         });
 
+        if ($validated['action'] === 'reserve') {
+            $sessionKey = $this->reservationSessionKey($seance);
+            $pendingSeats = $request->session()->get($sessionKey, []);
+
+            if (empty($pendingSeats)) {
+                return response()->json(['message' => 'Не выбраны места.'], 422);
+            }
+
+            $takenQuery = SeatReservation::where('seance_id', $seance)
+                ->where('status', 'taken')
+                ->where(function ($query) use ($pendingSeats) {
+                    foreach ($pendingSeats as $seatData) {
+                        $query->orWhere(function ($seatQuery) use ($seatData) {
+                            $seatQuery->where('row', $seatData['row'])
+                                ->where('seat', $seatData['seat']);
+                        });
+                    }
+                });
+
+            $takenSeats = $takenQuery->get()
+                ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
+                ->all();
+
+            if (!empty($takenSeats)) {
+                $cleanedSeats = [];
+                foreach ($pendingSeats as $seatKey => $seatData) {
+                    if (empty($takenSeats[$seatKey])) {
+                        $cleanedSeats[$seatKey] = $seatData;
+                    }
+                }
+                $request->session()->put($sessionKey, $cleanedSeats);
+
+                return response()->json(['message' => 'Некоторые места уже заняты.'], 409);
+            }
+
+            foreach ($pendingSeats as $seatKey => $seatData) {
+                SeatReservation::updateOrCreate(
+                    [
+                        'seance_id' => $seance,
+                        'row' => $seatData['row'],
+                        'seat' => $seatData['seat'],
+                    ],
+                    ['status' => 'taken']
+                );
+            }
+
+            $request->session()->put($sessionKey, $pendingSeats);
+
+            return response()->json([
+                'reserved' => count($pendingSeats),
+                'redirect' => route('client.hall', ['seance' => $seance]),
+            ]);
+        }
+
+        if (!$validated['row'] || !$validated['seat']) {
+            return response()->json(['message' => 'Место не указано.'], 422);
+        }
+
         $scheme = $this->normalizeScheme($hall['scheme'] ?? []);
         $rowIndex = $validated['row'] - 1;
         $seatIndex = $validated['seat'] - 1;
@@ -144,25 +217,32 @@ class ClientController extends Controller
             return response()->json(['message' => 'Место уже занято.'], 409);
         }
 
-        if ($existing) {
-            $existing->delete();
+        $sessionKey = $this->reservationSessionKey($seance);
+        $pendingSeats = $request->session()->get($sessionKey, []);
+        $seatKey = "{$validated['row']}-{$validated['seat']}";
+
+        if (isset($pendingSeats[$seatKey])) {
+            unset($pendingSeats[$seatKey]);
+            $selected = false;
         } else {
-            SeatReservation::create([
-                'seance_id' => $seance,
+            $pendingSeats[$seatKey] = [
                 'row' => $validated['row'],
                 'seat' => $validated['seat'],
-                'status' => 'selected',
-            ]);
+            ];
+            $selected = true;
         }
 
-        $selectedCount = SeatReservation::where('seance_id', $seance)
-            ->where('status', 'selected')
-            ->count();
+        $request->session()->put($sessionKey, $pendingSeats);
 
         return response()->json([
-            'selectedCount' => $selectedCount,
-            'selected' => !$existing,
+            'selectedCount' => count($pendingSeats),
+            'selected' => $selected,
         ]);
+    }
+
+    private function reservationSessionKey(int $seance): string
+    {
+        return "reservations.pending.{$seance}";
     }
 
     private function normalizeScheme(mixed $rawScheme): array
