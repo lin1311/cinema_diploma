@@ -8,6 +8,7 @@ use App\Models\Publication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use App\Models\Movie;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class ClientController extends Controller
@@ -284,6 +285,103 @@ class ClientController extends Controller
         }
 
         return view('public.payment', [
+            'movie' => $movie ?? [],
+            'hall' => $hall ?? [],
+            'seance' => $seanceData,
+            'seatsLabel' => implode(', ', $seatLabels),
+            'totalCost' => $totalCost,
+        ]);
+    }
+
+    public function ticket(Request $request, int $seance): View
+    {
+        $publication = Publication::latest('created_at')->first();
+
+        if (!$publication) {
+            abort(404);
+        }
+
+        $payload = $publication->payload ?? [];
+        $seances = collect($payload['seances'] ?? []);
+        $seanceData = $seances->first(function ($item) use ($seance) {
+            return (int) ($item['id'] ?? 0) === $seance;
+        });
+
+        if (!$seanceData) {
+            abort(404);
+        }
+
+        $movies = collect($payload['movies'] ?? [])->map(fn($movie) => (array) $movie);
+        $movie = $movies->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['movie_id'] ?? 0);
+        });
+
+        $halls = collect($payload['halls'] ?? [])->map(fn($hall) => (array) $hall);
+        $hall = $halls->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['hall_id'] ?? 0);
+        });
+
+        $prices = $payload['prices'][$seanceData['hall_id'] ?? null] ?? [];
+        $scheme = $this->normalizeScheme($hall['scheme'] ?? []);
+
+        $sessionKey = $this->reservationSessionKey($seance);
+        $pendingSeats = $request->session()->get($sessionKey, []);
+
+        if (empty($pendingSeats)) {
+            return redirect()->route('client.hall', ['seance' => $seance]);
+        }
+
+        $takenSeats = SeatReservation::where('seance_id', $seance)
+            ->where('status', 'taken')
+            ->where(function ($query) use ($pendingSeats) {
+                foreach ($pendingSeats as $seatData) {
+                    $query->orWhere(function ($seatQuery) use ($seatData) {
+                        $seatQuery->where('row', $seatData['row'])
+                            ->where('seat', $seatData['seat']);
+                    });
+                }
+            })
+            ->get()
+            ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
+            ->all();
+
+        if (!empty($takenSeats)) {
+            $request->session()->forget($sessionKey);
+
+            return redirect()->route('client.hall', ['seance' => $seance]);
+        }
+
+        DB::transaction(function () use ($pendingSeats, $seance) {
+            foreach ($pendingSeats as $seatData) {
+                SeatReservation::updateOrCreate(
+                    [
+                        'seance_id' => $seance,
+                        'row' => $seatData['row'],
+                        'seat' => $seatData['seat'],
+                    ],
+                    ['status' => 'taken']
+                );
+            }
+        });
+
+        $request->session()->forget($sessionKey);
+
+        $seatLabels = [];
+        $totalCost = 0;
+
+        foreach ($pendingSeats as $seatData) {
+            $rowIndex = ($seatData['row'] ?? 0) - 1;
+            $seatIndex = ($seatData['seat'] ?? 0) - 1;
+            $seatType = $scheme['seatsGrid'][$rowIndex][$seatIndex] ?? 'standart';
+            $price = $seatType === 'vip'
+                ? (int) data_get($prices, 'vip', 0)
+                : (int) data_get($prices, 'standart', 0);
+
+            $totalCost += $price;
+            $seatLabels[] = sprintf('Ряд %d место %d', $seatData['row'], $seatData['seat']);
+        }
+
+        return view('public.ticket', [
             'movie' => $movie ?? [],
             'hall' => $hall ?? [],
             'seance' => $seanceData,

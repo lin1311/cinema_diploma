@@ -1,4 +1,9 @@
-<section class="ticket">
+<header class="page-header">
+    <h1 class="page-header__title">Идём<span>в</span>кино</h1>
+</header>
+  
+  <main>
+    <section class="ticket">
       
       <header class="tichet__check">
         <h2 class="ticket__check-title">Электронный билет</h2>
@@ -15,4 +20,5 @@
         <p class="ticket__hint">Покажите QR-код нашему контроллеру для подтверждения бронирования.</p>
         <p class="ticket__hint">Приятного просмотра!</p>
       </div>
-</section> 
+    </section>     
+</main>

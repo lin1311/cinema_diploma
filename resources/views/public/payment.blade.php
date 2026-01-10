@@ -32,7 +32,7 @@
           Стоимость: <span class="ticket__details ticket__cost">{{ $totalCost }}</span> рублей
         </p>
 
-        <button class="acceptin-button" type="button" onclick="location.href='ticket.html'">
+        <button class="acceptin-button" type="button" onclick="location.href='{{ route('client.ticket', ['seance' => data_get($seance, 'id')]) }}'">
           Получить код бронирования
         </button>
 
