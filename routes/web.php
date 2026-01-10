@@ -13,6 +13,7 @@ use App\Http\Controllers\SeanceScheduleController;
 Route::get('/', [ClientController::class, 'index'])->name('client.index');
 Route::get('/hall/{seance}', [ClientController::class, 'hall'])->name('client.hall');
 Route::get('/seances', [SeanceScheduleController::class, 'index'])->name('seances.index');
+Route::get('/payment/{seance}', [ClientController::class, 'payment'])->name('client.payment');
 Route::post('/hall/{seance}/seats', [ClientController::class, 'reserveSeats'])->name('client.hall.reserve');
 
 // Главная админки (выводит залы — HallController)

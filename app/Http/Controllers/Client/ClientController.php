@@ -177,22 +177,11 @@ class ClientController extends Controller
                 return response()->json(['message' => 'Некоторые места уже заняты.'], 409);
             }
 
-            foreach ($pendingSeats as $seatKey => $seatData) {
-                SeatReservation::updateOrCreate(
-                    [
-                        'seance_id' => $seance,
-                        'row' => $seatData['row'],
-                        'seat' => $seatData['seat'],
-                    ],
-                    ['status' => 'taken']
-                );
-            }
-
             $request->session()->put($sessionKey, $pendingSeats);
 
             return response()->json([
                 'reserved' => count($pendingSeats),
-                'redirect' => route('client.hall', ['seance' => $seance]),
+                'redirect' => route('client.payment', ['seance' => $seance]),
             ]);
         }
 
@@ -241,6 +230,67 @@ class ClientController extends Controller
         ]);
     }
 
+    public function payment(Request $request, int $seance): View
+    {
+        $publication = Publication::latest('created_at')->first();
+
+        if (!$publication) {
+            abort(404);
+        }
+
+        $payload = $publication->payload ?? [];
+        $seances = collect($payload['seances'] ?? []);
+        $seanceData = $seances->first(function ($item) use ($seance) {
+            return (int) ($item['id'] ?? 0) === $seance;
+        });
+
+        if (!$seanceData) {
+            abort(404);
+        }
+
+        $movies = collect($payload['movies'] ?? [])->map(fn($movie) => (array) $movie);
+        $movie = $movies->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['movie_id'] ?? 0);
+        });
+
+        $halls = collect($payload['halls'] ?? [])->map(fn($hall) => (array) $hall);
+        $hall = $halls->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['hall_id'] ?? 0);
+        });
+
+        $prices = $payload['prices'][$seanceData['hall_id'] ?? null] ?? [];
+        $scheme = $this->normalizeScheme($hall['scheme'] ?? []);
+
+        $sessionKey = $this->reservationSessionKey($seance);
+        $pendingSeats = $request->session()->get($sessionKey, []);
+
+        if (empty($pendingSeats)) {
+            return redirect()->route('client.hall', ['seance' => $seance]);
+        }
+
+        $seatLabels = [];
+        $totalCost = 0;
+
+        foreach ($pendingSeats as $seatData) {
+            $rowIndex = ($seatData['row'] ?? 0) - 1;
+            $seatIndex = ($seatData['seat'] ?? 0) - 1;
+            $seatType = $scheme['seatsGrid'][$rowIndex][$seatIndex] ?? 'standart';
+            $price = $seatType === 'vip'
+                ? (int) data_get($prices, 'vip', 0)
+                : (int) data_get($prices, 'standart', 0);
+
+            $totalCost += $price;
+            $seatLabels[] = sprintf('Ряд %d место %d', $seatData['row'], $seatData['seat']);
+        }
+
+        return view('public.payment', [
+            'movie' => $movie ?? [],
+            'hall' => $hall ?? [],
+            'seance' => $seanceData,
+            'seatsLabel' => implode(', ', $seatLabels),
+            'totalCost' => $totalCost,
+        ]);
+    }
     private function reservationSessionKey(int $seance): string
     {
         return "reservations.pending.{$seance}";
