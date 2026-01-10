@@ -23,17 +23,37 @@
           <p>Тапните дважды,<br>чтобы увеличить</p>
         </div>
       </div>
+      @php
+        $selectedCount = is_array($selectedSeats ?? null) ? count($selectedSeats) : 0;
+      @endphp
       <div class="buying-scheme">
-        <div class="buying-scheme__wrapper">
-          @foreach(($scheme['seatsGrid'] ?? []) as $row)
+        <div class="buying-scheme__wrapper"
+             data-seat-toggle-url="{{ route('client.hall.toggle-seat', ['seance' => data_get($seance, 'id')]) }}">
+          @foreach(($scheme['seatsGrid'] ?? []) as $rowIndex => $row)
             <div class="buying-scheme__row">
-              @foreach($row as $seatType)
+              @foreach($row as $seatIndex => $seatType)
                 @php
                   $normalizedType = in_array($seatType, ['standart', 'vip', 'disabled'], true)
                     ? $seatType
                     : 'standart';
+                  $seatRowNumber = $rowIndex + 1;
+                  $seatNumber = $seatIndex + 1;
+                  $seatKey = "{$seatRowNumber}-{$seatNumber}";
+                  $isTaken = !empty($takenSeats[$seatKey]);
+                  $isSelected = !empty($selectedSeats[$seatKey]);
+                  $seatClasses = ['buying-scheme__chair', 'buying-scheme__chair_' . $normalizedType];
+                  if ($isTaken) {
+                    $seatClasses[] = 'buying-scheme__chair_taken';
+                  }
+                  if ($isSelected) {
+                    $seatClasses[] = 'buying-scheme__chair_selected';
+                  }
                 @endphp
-                <span class="buying-scheme__chair buying-scheme__chair_{{ $normalizedType }}"></span>
+                <span class="{{ implode(' ', $seatClasses) }}"
+                      data-seat-row="{{ $seatRowNumber }}"
+                      data-seat-number="{{ $seatNumber }}"
+                      data-seat-type="{{ $normalizedType }}"
+                      data-seat-status="{{ $isTaken ? 'taken' : ($isSelected ? 'selected' : 'available') }}"></span>
               @endforeach
             </div>
           @endforeach
@@ -55,11 +75,16 @@
             </div>
             <div class="col">
                 <p class="buying-scheme__legend-price"><span class="buying-scheme__chair buying-scheme__chair_taken"></span> Занято</p>
-                <p class="buying-scheme__legend-price"><span class="buying-scheme__chair buying-scheme__chair_selected"></span> Выбрано</p>
+                <p class="buying-scheme__legend-price">
+                    <span class="buying-scheme__chair buying-scheme__chair_selected"></span>
+                    Выбрано <span data-role="selected-count">@if($selectedCount > 0)({{ $selectedCount }})@endif</span>
+                </p>
             </div>
         </div>
       </div>
       <button class="acceptin-button" onclick="location.href='payment.html'">Забронировать</button>
     </section>
   </main>
+  <script src="{{ asset('assets/client/js/hall-seats.js') }}"></script>
+
 @endsection

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Models\SeatReservation;
 use App\Models\Publication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -73,6 +74,19 @@ class ClientController extends Controller
         $selectedDate = $request->query('date');
         $date = $selectedDate ? Carbon::parse($selectedDate) : Carbon::today();
 
+        $seatMap = SeatReservation::where('seance_id', $seance)
+            ->whereIn('status', ['taken', 'selected'])
+            ->get()
+            ->groupBy('status');
+
+        $takenSeats = $seatMap->get('taken', collect())
+            ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
+            ->all();
+
+        $selectedSeats = $seatMap->get('selected', collect())
+            ->mapWithKeys(fn(SeatReservation $seat) => ["{$seat->row}-{$seat->seat}" => true])
+            ->all();
+
         return view('public.hall', [
             'movie' => $movie ?? [],
             'hall' => $hall ?? [],
@@ -80,6 +94,74 @@ class ClientController extends Controller
             'scheme' => $this->normalizeScheme($hall['scheme'] ?? []),
             'prices' => $prices,
             'dateLabel' => $date->format('d.m.Y'),
+            'takenSeats' => $takenSeats,
+            'selectedSeats' => $selectedSeats,
+        ]);
+    }
+
+    public function toggleSeat(Request $request, int $seance)
+    {
+        $validated = $request->validate([
+            'row' => ['required', 'integer', 'min:1'],
+            'seat' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $publication = Publication::latest('created_at')->first();
+        if (!$publication) {
+            return response()->json(['message' => 'Нет данных.'], 404);
+        }
+
+        $payload = $publication->payload ?? [];
+        $seances = collect($payload['seances'] ?? []);
+        $seanceData = $seances->first(function ($item) use ($seance) {
+            return (int) ($item['id'] ?? 0) === $seance;
+        });
+
+        if (!$seanceData) {
+            return response()->json(['message' => 'Сеанс не найден.'], 404);
+        }
+
+        $halls = collect($payload['halls'] ?? [])->map(fn($hall) => (array) $hall);
+        $hall = $halls->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['hall_id'] ?? 0);
+        });
+
+        $scheme = $this->normalizeScheme($hall['scheme'] ?? []);
+        $rowIndex = $validated['row'] - 1;
+        $seatIndex = $validated['seat'] - 1;
+
+        $seatType = $scheme['seatsGrid'][$rowIndex][$seatIndex] ?? null;
+        if (!$seatType || $seatType === 'disabled') {
+            return response()->json(['message' => 'Место недоступно.'], 422);
+        }
+
+        $existing = SeatReservation::where('seance_id', $seance)
+            ->where('row', $validated['row'])
+            ->where('seat', $validated['seat'])
+            ->first();
+
+        if ($existing && $existing->status === 'taken') {
+            return response()->json(['message' => 'Место уже занято.'], 409);
+        }
+
+        if ($existing) {
+            $existing->delete();
+        } else {
+            SeatReservation::create([
+                'seance_id' => $seance,
+                'row' => $validated['row'],
+                'seat' => $validated['seat'],
+                'status' => 'selected',
+            ]);
+        }
+
+        $selectedCount = SeatReservation::where('seance_id', $seance)
+            ->where('status', 'selected')
+            ->count();
+
+        return response()->json([
+            'selectedCount' => $selectedCount,
+            'selected' => !$existing,
         ]);
     }
 
