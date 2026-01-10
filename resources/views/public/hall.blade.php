@@ -38,19 +38,21 @@
                   $seatKey = "{$seatRowNumber}-{$seatNumber}";
                   $isTaken = !empty($takenSeats[$seatKey]);
                   $isSelected = !empty($selectedSeats[$seatKey]);
-                  $seatClasses = ['buying-scheme__chair', 'buying-scheme__chair_' . $normalizedType];
-                  if ($isTaken) {
-                    $seatClasses[] = 'buying-scheme__chair_taken';
-                  }
-                  if ($isSelected) {
-                    $seatClasses[] = 'buying-scheme__chair_selected';
+                  $seatStatus = $isTaken ? 'taken' : ($isSelected ? 'selected' : 'available');
+                  if ($seatStatus === 'taken') {
+                    $seatClasses = ['buying-scheme__chair', 'buying-scheme__chair_taken'];
+                  } else {
+                    $seatClasses = ['buying-scheme__chair', 'buying-scheme__chair_' . $normalizedType];
+                    if ($seatStatus === 'selected') {
+                      $seatClasses[] = 'buying-scheme__chair_selected';
+                    }
                   }
                 @endphp
                 <span class="{{ implode(' ', $seatClasses) }}"
                       data-seat-row="{{ $seatRowNumber }}"
                       data-seat-number="{{ $seatNumber }}"
                       data-seat-type="{{ $normalizedType }}"
-                      data-seat-status="{{ $isTaken ? 'taken' : ($isSelected ? 'selected' : 'available') }}"></span>
+                      data-seat-status="{{ $seatStatus }}"></span>
               @endforeach
             </div>
           @endforeach
