@@ -66,6 +66,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Удалить карточку фильма из DOM
                 const card = document.querySelector(`.conf-step__movie[data-id="${movieId}"]`);
                 if (card) card.remove();
+                document
+                    .querySelectorAll(`.conf-step__seances-movie[data-movie-id="${movieId}"]`)
+                    .forEach((seance) => seance.remove());
+                if (Array.isArray(window.seancesFromServer)) {
+                    window.seancesFromServer = window.seancesFromServer.filter(
+                        (seance) => String(seance.movie_id) !== String(movieId)
+                    );
+                }
                 deletePopup.classList.remove('active');
                 deletePopup.style.display = 'none';
                 if (window.updateMoviesEmptyState) {

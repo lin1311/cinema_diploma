@@ -279,4 +279,5 @@
   <script src="{{ asset('assets/admin/js/popup-seance.js') }}"></script>
   <script src="{{ asset('assets/admin/js/hall-seats-setup.js') }}"></script>
   <script src="{{ asset('assets/admin/js/publication.js') }}"></script>
+  <script src="{{ asset('assets/admin/js/header-reload.js') }}"></script>
 @endpush
