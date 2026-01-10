@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\HallController;
+use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\HallSchemeController;
 use App\Http\Controllers\Admin\SetPricesController;
 use App\Http\Controllers\Admin\MovieController;
@@ -17,39 +18,75 @@ Route::get('/payment/{seance}', [ClientController::class, 'payment'])->name('cli
 Route::get('/ticket/{seance}', [ClientController::class, 'ticket'])->name('client.ticket');
 Route::post('/hall/{seance}/seats', [ClientController::class, 'reserveSeats'])->name('client.hall.reserve');
 
+Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.submit');
+Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+
 // Главная админки (выводит залы — HallController)
-Route::get('/admin', [HallController::class, 'index'])->name('admin.halls.index');
+Route::get('/admin', [HallController::class, 'index'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.index');
 
 // CRUD залов
-Route::get('/admin/halls', [HallController::class, 'index'])->name('admin.halls.index');
-Route::post('/admin/halls', [HallController::class, 'store'])->name('admin.halls.store');
-Route::delete('/admin/halls/{id}', [HallController::class, 'destroy'])->name('admin.halls.destroy');
+Route::get('/admin/halls', [HallController::class, 'index'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.index');
+Route::post('/admin/halls', [HallController::class, 'store'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.store');
+Route::delete('/admin/halls/{id}', [HallController::class, 'destroy'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.destroy');
 
 // Работа со схемами залов
-Route::get('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'show'])->name('admin.halls.scheme.show');
+Route::get('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'show'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.scheme.show');
 
-Route::post('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'save'])->name('admin.halls.scheme.save');
+Route::post('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'save'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.scheme.save');
 
 // Группа маршрутов для админки, раздел "Конфигурация цен"
 Route::prefix('admin/prices')->name('admin.prices.')->group(function () {
-    Route::get('/', [SetPricesController::class, 'index'])->name('index');
-    Route::post('/{hall}', [SetPricesController::class, 'update'])->name('update');
+    Route::get('/', [SetPricesController::class, 'index'])
+        ->middleware('admin.auth')
+        ->name('index');
+    Route::post('/{hall}', [SetPricesController::class, 'update'])
+        ->middleware('admin.auth')
+        ->name('update');
 });
 
 Route::prefix('admin')->group(function () {
     // Список фильмов
-    Route::get('movies', [MovieController::class, 'index'])->name('admin.movies.index');
+    Route::get('movies', [MovieController::class, 'index'])
+        ->middleware('admin.auth')
+        ->name('admin.movies.index');
     // Форма создания
-    Route::get('movies/create', [MovieController::class, 'create'])->name('movies.create');
+    Route::get('movies/create', [MovieController::class, 'create'])
+        ->middleware('admin.auth')
+        ->name('movies.create');
     // Сохранение фильма
-    Route::post('movies', [MovieController::class, 'store'])->name('movies.store');
+    Route::post('movies', [MovieController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('movies.store');
     // Форма редактирования
-    Route::get('movies/{movie}/edit', [MovieController::class, 'edit'])->name('movies.edit');
+    Route::get('movies/{movie}/edit', [MovieController::class, 'edit'])
+        ->middleware('admin.auth')
+        ->name('movies.edit');
     // Обновление фильма
-    Route::put('movies/{movie}', [MovieController::class, 'update'])->name('movies.update');
+    Route::put('movies/{movie}', [MovieController::class, 'update'])
+        ->middleware('admin.auth')
+        ->name('movies.update');
     // Удаление фильма
-    Route::delete('movies/{movie}', [MovieController::class, 'destroy'])->name('movies.destroy');
+    Route::delete('movies/{movie}', [MovieController::class, 'destroy'])
+        ->middleware('admin.auth')
+        ->name('movies.destroy');
 
-    Route::post('seances', [SeanceController::class, 'store'])->name('admin.seances.store');
-    Route::post('publications', [PublicationController::class, 'store'])->name('admin.publications.store');
+    Route::post('seances', [SeanceController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('admin.seances.store');
+    Route::post('publications', [PublicationController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('admin.publications.store');
 });
