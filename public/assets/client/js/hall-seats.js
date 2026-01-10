@@ -74,6 +74,7 @@
 
       const selectedSeats = wrapper.querySelectorAll('.buying-scheme__chair_selected');
       if (selectedSeats.length === 0) {
+        window.alert('Сначала выберите место');
         return;
       }
 
