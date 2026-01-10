@@ -84,6 +84,7 @@ class ClientController extends Controller
             ->all();
 
         $sessionKey = $this->reservationSessionKey($seance);
+        $request->session()->forget($sessionKey);
         $pendingSeats = $request->session()->get($sessionKey, []);
         $selectedSeats = [];
 
