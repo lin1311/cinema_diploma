@@ -48,8 +48,16 @@
             <h3 class="movie-seances__hall-title">{{ $hall['name'] ?? 'Зал' }}</h3>
             <ul class="movie-seances__list">
               @foreach ($hallSeances as $seance)
+                @php
+                  $seanceId = data_get($seance, 'id') ?? data_get($seance, 'seance_id');
+                @endphp
                 <li class="movie-seances__time-block">
-                  <a class="movie-seances__time" href="#">{{ $seance['start_time'] }}</a>
+                  <a class="movie-seances__time"
+                     href="{{ $seanceId ? route('client.hall', ['seance' => $seanceId]) : '#' }}"
+                     data-role="seance-link"
+                     data-base-href="{{ $seanceId ? route('client.hall', ['seance' => $seanceId]) : '#' }}">
+                    {{ data_get($seance, 'start_time') }}
+                  </a>
                 </li>
               @endforeach
             </ul>

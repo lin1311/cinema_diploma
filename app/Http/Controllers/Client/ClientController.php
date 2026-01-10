@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Publication;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use App\Models\Movie;
 use Illuminate\View\View;
 
@@ -37,5 +39,91 @@ class ClientController extends Controller
             'hallsById' => $halls->keyBy('id'),
             'seancesByMovie' => $seancesByMovie,
         ]);
+    }
+
+    public function hall(Request $request, int $seance): View
+    {
+        $publication = Publication::latest('created_at')->first();
+
+        if (!$publication) {
+            abort(404);
+        }
+
+        $payload = $publication->payload ?? [];
+        $seances = collect($payload['seances'] ?? []);
+        $seanceData = $seances->first(function ($item) use ($seance) {
+            return (int) ($item['id'] ?? 0) === $seance;
+        });
+
+        if (!$seanceData) {
+            abort(404);
+        }
+
+        $movies = collect($payload['movies'] ?? [])->map(fn($movie) => (array) $movie);
+        $movie = $movies->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['movie_id'] ?? 0);
+        });
+
+        $halls = collect($payload['halls'] ?? [])->map(fn($hall) => (array) $hall);
+        $hall = $halls->first(function ($item) use ($seanceData) {
+            return (int) ($item['id'] ?? 0) === (int) ($seanceData['hall_id'] ?? 0);
+        });
+
+        $prices = $payload['prices'][$seanceData['hall_id'] ?? null] ?? [];
+        $selectedDate = $request->query('date');
+        $date = $selectedDate ? Carbon::parse($selectedDate) : Carbon::today();
+
+        return view('public.hall', [
+            'movie' => $movie ?? [],
+            'hall' => $hall ?? [],
+            'seance' => $seanceData,
+            'scheme' => $this->normalizeScheme($hall['scheme'] ?? []),
+            'prices' => $prices,
+            'dateLabel' => $date->format('d.m.Y'),
+        ]);
+    }
+
+    private function normalizeScheme(mixed $rawScheme): array
+    {
+        if (is_object($rawScheme)) {
+            $rawScheme = (array) $rawScheme;
+        }
+
+        if (is_array($rawScheme) && array_is_list($rawScheme)) {
+            $rows = count($rawScheme);
+            $seats = $rows > 0 ? count($rawScheme[0]) : 0;
+
+            return [
+                'rows' => $rows,
+                'seats' => $seats,
+                'seatsGrid' => $rawScheme,
+            ];
+        }
+
+        if (is_array($rawScheme)) {
+            $seatsGrid = $rawScheme['seatsGrid'] ?? [];
+            if (is_object($seatsGrid)) {
+                $seatsGrid = (array) $seatsGrid;
+            }
+
+            $rows = (int) ($rawScheme['rows'] ?? count($seatsGrid));
+            $seats = (int) ($rawScheme['seats'] ?? ($seatsGrid[0] ?? null ? count($seatsGrid[0]) : 0));
+
+            if (!is_array($seatsGrid) || $rows === 0 || $seats === 0) {
+                $seatsGrid = [];
+            }
+
+            return [
+                'rows' => $rows,
+                'seats' => $seats,
+                'seatsGrid' => $seatsGrid,
+            ];
+        }
+
+        return [
+            'rows' => 0,
+            'seats' => 0,
+            'seatsGrid' => [],
+        ];
     }
 }

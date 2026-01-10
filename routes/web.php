@@ -11,6 +11,7 @@ use App\Http\Controllers\Client\ClientController;
 use App\Http\Controllers\SeanceScheduleController;
 
 Route::get('/', [ClientController::class, 'index'])->name('client.index');
+Route::get('/hall/{seance}', [ClientController::class, 'hall'])->name('client.hall');
 Route::get('/seances', [SeanceScheduleController::class, 'index'])->name('seances.index');
 
 // Главная админки (выводит залы — HallController)

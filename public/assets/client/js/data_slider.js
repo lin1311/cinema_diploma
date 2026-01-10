@@ -26,6 +26,25 @@
     return new Date(year, month - 1, day);
   };
 
+  const updateSeanceLinks = () => {
+    const dateKey = toDateKey(selectedDate);
+    const seanceLinks = document.querySelectorAll('[data-role="seance-link"]');
+
+    seanceLinks.forEach((link) => {
+      const baseHref = link.dataset.baseHref || link.getAttribute('href');
+      if (!baseHref) {
+        return;
+      }
+
+      const url = new URL(baseHref, window.location.origin);
+      url.searchParams.set('date', dateKey);
+      link.setAttribute('href', `${url.pathname}${url.search}`);
+      if (!link.dataset.baseHref) {
+        link.dataset.baseHref = baseHref;
+      }
+    });
+  };
+
   const render = () => {
     dayItems.forEach((dayItem, index) => {
       const date = new Date(startDate);
@@ -60,6 +79,8 @@
     dayItems.forEach((dayItem) => {
       dayItem.classList.toggle('page-nav__day_chosen', dayItem.dataset.date === toDateKey(selectedDate));
     });
+
+    updateSeanceLinks();
   };
 
   const shiftStart = (days) => {
@@ -105,4 +126,5 @@
 
   render();
 })();
+
 
