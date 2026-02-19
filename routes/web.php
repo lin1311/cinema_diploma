@@ -1,0 +1,100 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\HallController;
+use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\HallSchemeController;
+use App\Http\Controllers\Admin\SetPricesController;
+use App\Http\Controllers\Admin\MovieController;
+use App\Http\Controllers\Admin\SeanceController;
+use App\Http\Controllers\Admin\PublicationController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\SeanceScheduleController;
+
+Route::get('/', [ClientController::class, 'index'])->name('client.index');
+Route::get('/hall/{seance}', [ClientController::class, 'hall'])->name('client.hall');
+Route::get('/seances', [SeanceScheduleController::class, 'index'])->name('seances.index');
+Route::get('/payment/{seance}', [ClientController::class, 'payment'])->name('client.payment');
+Route::get('/ticket/{seance}', [ClientController::class, 'ticket'])->name('client.ticket');
+Route::post('/hall/{seance}/seats', [ClientController::class, 'reserveSeats'])->name('client.hall.reserve');
+
+Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('admin.login');
+Route::post('/admin/login', [AuthController::class, 'login'])->name('admin.login.submit');
+Route::post('/admin/logout', [AuthController::class, 'logout'])->name('admin.logout');
+
+// Главная админки (выводит залы — HallController)
+Route::get('/admin', [HallController::class, 'index'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.index');
+
+// CRUD залов
+Route::get('/admin/halls', [HallController::class, 'index'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.index');
+Route::post('/admin/halls', [HallController::class, 'store'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.store');
+Route::delete('/admin/halls/{id}', [HallController::class, 'destroy'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.destroy');
+
+// Работа со схемами залов
+Route::get('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'show'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.scheme.show');
+
+Route::post('/admin/halls/{hall}/scheme', [HallSchemeController::class, 'save'])
+    ->middleware('admin.auth')
+    ->name('admin.halls.scheme.save');
+
+// Группа маршрутов для админки, раздел "Конфигурация цен"
+Route::prefix('admin/prices')->name('admin.prices.')->group(function () {
+    Route::get('/', [SetPricesController::class, 'index'])
+        ->middleware('admin.auth')
+        ->name('index');
+    Route::post('/{hall}', [SetPricesController::class, 'update'])
+        ->middleware('admin.auth')
+        ->name('update');
+});
+
+Route::prefix('admin')->group(function () {
+    // Список фильмов
+    Route::get('movies', [MovieController::class, 'index'])
+        ->middleware('admin.auth')
+        ->name('admin.movies.index');
+    // Форма создания
+    Route::get('movies/create', [MovieController::class, 'create'])
+        ->middleware('admin.auth')
+        ->name('movies.create');
+    // Сохранение фильма
+    Route::post('movies', [MovieController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('movies.store');
+    // Временная загрузка постера при создании фильма
+    Route::post('movies/poster-temp', [MovieController::class, 'uploadTempPoster'])
+        ->middleware('admin.auth')
+        ->name('movies.poster.temp');
+    // Форма редактирования
+    Route::get('movies/{movie}/edit', [MovieController::class, 'edit'])
+        ->middleware('admin.auth')
+        ->name('movies.edit');
+    // Обновление фильма
+    Route::put('movies/{movie}', [MovieController::class, 'update'])
+        ->middleware('admin.auth')
+        ->name('movies.update');
+    // Обновление постера фильма
+    Route::post('movies/{movie}/poster', [MovieController::class, 'updatePoster'])
+        ->middleware('admin.auth')
+        ->name('movies.poster');
+    // Удаление фильма
+    Route::delete('movies/{movie}', [MovieController::class, 'destroy'])
+        ->middleware('admin.auth')
+        ->name('movies.destroy');
+
+    Route::post('seances', [SeanceController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('admin.seances.store');
+    Route::post('publications', [PublicationController::class, 'store'])
+        ->middleware('admin.auth')
+        ->name('admin.publications.store');
+});
